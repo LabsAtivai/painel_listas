@@ -10,9 +10,17 @@ services:
     environment:
       - NODE_ENV=production
       - TZ=America/Sao_Paulo
+      - CREDENTIALS_API_URL=http://snov-am-api:8000
+      - CREDENTIALS_API_KEY=${CREDENTIALS_API_KEY}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 10s
+    networks:
+      - ativaai
+
+networks:
+  ativaai:
+    external: true

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { google } from "googleapis";
-import { sheetsRead, sheetsWrite } from "../services/sheetsRateLimiter.js";
+import { sheetsWrite } from "../services/sheetsRateLimiter.js";
+import { getActiveClients } from "../services/credentialsApi.js";
 
 const credentials = {
   type: "service_account",
@@ -16,42 +17,6 @@ const credentials = {
     "https://www.googleapis.com/robot/v1/metadata/x509/ativarelatorio%40relatoriolistas.iam.gserviceaccount.com",
   universe_domain: "googleapis.com",
 };
-
-async function readClientDataFromSheet(auth) {
-  const sheets = google.sheets({ version: "v4", auth });
-  const spreadsheetId = "1u4rMoTUQz0w_g92xmV8_pjtVc8JtKLLH7v090V5lq40";
-  const range = "contas";
-
-  try {
-    const response = await sheetsRead(() =>
-      sheets.spreadsheets.values.get({ spreadsheetId, range })
-    );
-
-    const rows = response.data.values;
-    if (!rows.length) {
-      console.log("No data found.");
-      return [];
-    }
-
-    const clients = [];
-    rows.forEach((row, index) => {
-      if (index !== 0 && row[0] === "TRUE") {
-        clients.push({
-          email: row[1],
-          clientId: row[2],
-          clientSecret: row[3],
-          emailSnovio: row[4],
-          senha: row[5],
-        });
-      }
-    });
-
-    return clients;
-  } catch (error) {
-    console.error("Erro ao ler dados do Google Sheets:", error);
-    throw error;
-  }
-}
 
 async function getAccessToken(clientId, clientSecret) {
   try {
@@ -129,7 +94,7 @@ export async function main() {
     });
 
     const sheetsClient = google.sheets({ version: "v4", auth });
-    const clients = await readClientDataFromSheet(auth);
+    const clients = await getActiveClients();
 
     // batchSize = 55 garante que os reads (1 por cliente) + o append final
     // caibam dentro de 60 req/min com margem de segurança
