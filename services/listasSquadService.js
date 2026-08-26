@@ -12,7 +12,7 @@ export async function listarCampanhasPorConta(contaId) {
   const [rows] = await pool.query(
     `SELECT id, nome, status_snovio AS statusSnovio
      FROM campanhas
-     WHERE conta_id = ?
+     WHERE conta_id = ? AND status_snovio = 'Active'
      ORDER BY nome`,
     [contaId]
   );
@@ -40,4 +40,43 @@ export async function adicionarListaSquad({ campanhaId, squad, contaEmail, dispa
     }
     throw err;
   }
+}
+
+// Edição inline (disparos e/ou conta_email) de uma entrada já existente em listas_squad,
+// usada pela grid da home. Só atualiza os campos informados.
+export async function atualizarListaSquad(id, { disparos, contaEmail }) {
+  const campos = [];
+  const valores = [];
+
+  if (disparos !== undefined) {
+    if (!Number.isFinite(disparos) || disparos <= 0) {
+      return { ok: false, erro: "Disparos precisa ser um número maior que zero." };
+    }
+    campos.push("disparos = ?");
+    valores.push(disparos);
+  }
+
+  if (contaEmail !== undefined) {
+    const email = String(contaEmail).trim();
+    if (!email) {
+      return { ok: false, erro: "E-mail da conta não pode ficar vazio." };
+    }
+    campos.push("conta_email = ?");
+    valores.push(email);
+  }
+
+  if (!campos.length) {
+    return { ok: false, erro: "Nada pra atualizar." };
+  }
+
+  const pool = getPool();
+  const [result] = await pool.query(
+    `UPDATE listas_squad SET ${campos.join(", ")} WHERE id = ?`,
+    [...valores, id]
+  );
+
+  if (result.affectedRows === 0) {
+    return { ok: false, erro: "Entrada não encontrada." };
+  }
+  return { ok: true };
 }

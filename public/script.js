@@ -10,12 +10,22 @@ const ATENCAO_DIAS = 10;
 const TIMEZONE = 'America/Sao_Paulo';
 
 function escapeHtml(str) {
-  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
 function formatNumero(n) {
   if (n === null || n === undefined) return '—';
   return Number(n).toLocaleString('pt-BR');
+}
+
+function showToast(msg, type = 'info') {
+  const icons = { success: '✅', error: '❌', info: 'ℹ️' };
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span>${icons[type] || ''}</span><span>${escapeHtml(msg)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 0.3s'; setTimeout(() => toast.remove(), 350); }, 3500);
 }
 
 /* =====================
@@ -203,9 +213,9 @@ function renderLinha(l, maxAtivos) {
         <div class="cell-campanha">${escapeHtml(l.campanha || '—')}</div>
         ${pill}
       </td>
-      <td>${escapeHtml(l.contaEmail || '—')}</td>
+      <td class="cell-editable" data-valor="${escapeHtml(l.contaEmail || '')}" onclick="iniciarEdicao(this, ${l.listaSquadId}, 'contaEmail')">${escapeHtml(l.contaEmail || '—')}</td>
       <td>${escapeHtml(l.clienteConta || '—')}</td>
-      <td class="num cell-mono">${formatNumero(l.disparos)}</td>
+      <td class="num cell-mono cell-editable" data-valor="${l.disparos ?? ''}" onclick="iniciarEdicao(this, ${l.listaSquadId}, 'disparos')">${formatNumero(l.disparos)}</td>
       <td class="num">
         <div class="ativos-value">${formatNumero(l.ativosRestantes)}</div>
         <div class="ativos-bar-track"><div class="ativos-bar-fill" style="width:${barPct}%"></div></div>
@@ -246,6 +256,67 @@ function renderPaginacao(totalPaginas) {
 function irParaPagina(p) {
   pagina = p;
   render();
+}
+
+/* =====================
+   EDIÇÃO INLINE (conta / disparos)
+===================== */
+
+function iniciarEdicao(td, listaSquadId, campo) {
+  if (td.querySelector('input')) return;
+
+  const valorAtual = td.dataset.valor || '';
+  const input = document.createElement('input');
+  input.type = campo === 'disparos' ? 'number' : 'text';
+  input.className = 'edit-input';
+  input.value = valorAtual;
+  td.innerHTML = '';
+  td.appendChild(input);
+  input.focus();
+  input.select();
+
+  let resolvido = false;
+
+  const cancelar = () => {
+    if (resolvido) return;
+    resolvido = true;
+    render();
+  };
+
+  const salvar = async () => {
+    if (resolvido) return;
+    const novo = input.value.trim();
+    if (!novo || novo === valorAtual) {
+      resolvido = true;
+      render();
+      return;
+    }
+    resolvido = true;
+    input.disabled = true;
+
+    try {
+      const body = campo === 'disparos' ? { disparos: Number(novo) } : { contaEmail: novo };
+      const res = await fetch(`/api/listas-squad/${listaSquadId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
+
+      showToast('Atualizado', 'success');
+      await carregarRelatorio();
+    } catch (e) {
+      showToast(e.message || 'Erro ao salvar', 'error');
+      render();
+    }
+  };
+
+  input.addEventListener('blur', salvar);
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); input.blur(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancelar(); }
+  });
 }
 
 /* =====================

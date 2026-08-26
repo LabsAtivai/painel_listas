@@ -40,6 +40,29 @@ mesma lógica de antes (`ativos_restantes / disparos`, dias úteis a partir de o
 - `services/filaAdicaoReader.js` e `services/snovioLookup.js` (busca ao vivo de conta por nome de campanha) foram **deletados** — obsoletos, a tela nova já sabe o `campanha_id` de antemão (veio do dropdown), não precisa mais adivinhar em qual conta uma campanha está.
 - Abas antigas do Google Sheets (`campanhas`, `unfinished`, squad tabs, `Adicionar`/`Retirar`) continuam existindo na planilha, só que **paradas** — nada escreve nelas mais. Se alguém do time ainda abre essa planilha direto (fora do painel), vai ver dado cada vez mais desatualizado. Vale avisar quem usa.
 
+## 0.0.1 Incidente de deploy (pós-migração) e ajustes seguintes
+
+Depois do primeiro deploy em produção, `/api/relatorio-listas` voltou 500. Causa raiz (achada via
+`docker logs painel-relatorios`): o usuário `root` do MySQL tinha **dois grants** —
+`root@'%'` (senha certa, a do `.env`) e `root@'172.18.0.1'` (o IP que o container usa por causa do
+NAT quando acessa o próprio IP público do host — hairpin) com senha diferente/velha. MySQL casa pelo
+host mais específico primeiro, então a conexão do container caía sempre no grant errado. Resolvido
+com `DROP USER 'root'@'172.18.0.1'; FLUSH PRIVILEGES;` — sobrou só `root@'%'` e `root@'localhost'`.
+Rede Docker (`ativaai`) e as env vars (`MYSQL_*`/`CREDENTIALS_*`) já estavam corretas, não era isso.
+
+Dois ajustes pedidos pelo usuário depois que o dado real começou a aparecer:
+
+- **Campanhas do dropdown (passo 2 de `/adicionar-lista`) filtram por `status_snovio = 'Active'`**
+  (`services/listasSquadService.js` → `listarCampanhasPorConta`). Campanhas arquivadas/pausadas/
+  completadas no Snov.io não aparecem mais pra escolher — só as que ainda estão rodando.
+- **"Conta" e "Disparos" viraram editáveis direto na grid da home** — clique na célula (linha vira
+  input, Enter salva/Esc cancela/blur salva), `PATCH /api/listas-squad/:id`
+  (`services/listasSquadService.js` → `atualizarListaSquad`). Precisou expor `listaSquadId`
+  (o `ls.id`, não o `campaignId`) na resposta de `getSquad()` — antes a grid não tinha nenhum
+  identificador que apontasse pra linha específica de `listas_squad`, só pro `campanhas.id`
+  compartilhado entre squads. Depois de salvar, recarrega o relatório inteiro (não só a célula) pra
+  `dias_restantes`/`data_prevista` recalcularem certo quando `disparos` muda.
+
 ## 0. Arquitetura de rotas (revisão 4)
 
 O app tem três páginas:

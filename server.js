@@ -17,6 +17,7 @@ import {
   buscarContasSnovio,
   listarCampanhasPorConta,
   adicionarListaSquad,
+  atualizarListaSquad,
 } from "./services/listasSquadService.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -272,6 +273,21 @@ app.post("/api/listas-squad", async (req, res) => {
   } catch (err) {
     console.error("Erro ao adicionar lista ao squad:", err);
     res.status(500).json({ error: "Erro ao adicionar lista ao squad" });
+  }
+});
+
+app.patch("/api/listas-squad/:id", async (req, res) => {
+  const { disparos, contaEmail } = req.body || {};
+  try {
+    const resultado = await atualizarListaSquad(req.params.id, {
+      disparos: disparos !== undefined ? Number(disparos) : undefined,
+      contaEmail,
+    });
+    if (!resultado.ok) return res.status(400).json({ error: resultado.erro });
+    res.json({ status: "ok" });
+  } catch (err) {
+    console.error("Erro ao atualizar lista do squad:", err);
+    res.status(500).json({ error: "Erro ao atualizar lista do squad" });
   }
 });
 

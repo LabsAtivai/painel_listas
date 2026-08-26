@@ -27,6 +27,7 @@ function formatarData(date) {
 async function getSquad(pool, squad) {
   const [rows] = await pool.query(
     `SELECT
+       ls.id AS listaSquadId,
        c.id AS campaignId,
        c.nome AS campanha,
        ls.conta_email AS contaEmail,
@@ -56,6 +57,7 @@ async function getSquad(pool, squad) {
 
     return {
       status: semDado ? "erro" : "ok",
+      listaSquadId: row.listaSquadId,
       campaignId: String(row.campaignId),
       campanha: row.campanha,
       contaEmail: row.contaEmail,

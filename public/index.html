@@ -91,6 +91,17 @@
   .page-btn.active{background:var(--blue-dim);border-color:var(--blue);color:#93c5fd}
 
   .empty-state{padding:50px 20px;text-align:center;color:var(--text3);font-size:13px}
+
+  .cell-editable{cursor:pointer;border-radius:6px;transition:background 0.1s}
+  .cell-editable:hover{background:var(--surface3)}
+  .edit-input{width:100%;background:var(--surface3);border:1px solid var(--blue);border-radius:6px;padding:4px 6px;color:var(--text);font-family:inherit;font-size:inherit;outline:none}
+
+  .toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:999}
+  .toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:11px 14px;font-size:13px;display:flex;align-items:center;gap:10px;animation:toast-in 0.2s ease;min-width:240px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+  .toast.success{border-color:var(--green)}
+  .toast.error{border-color:var(--red)}
+  .toast.info{border-color:var(--blue)}
+  @keyframes toast-in{from{transform:translateX(16px);opacity:0}}
 </style>
 </head>
 <body>
@@ -172,6 +183,8 @@
     </div>
   </div>
 </main>
+
+<div class="toast-container" id="toastContainer"></div>
 
 <script src="script.js"></script>
 </body>
