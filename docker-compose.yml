@@ -12,6 +12,11 @@ services:
       - TZ=America/Sao_Paulo
       - CREDENTIALS_API_URL=http://snov-am-api:8000
       - CREDENTIALS_API_KEY=${CREDENTIALS_API_KEY}
+      - MYSQL_HOST=${MYSQL_HOST}
+      - MYSQL_PORT=${MYSQL_PORT:-3306}
+      - MYSQL_USER=${MYSQL_USER}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD}
+      - MYSQL_DATABASE=${MYSQL_DATABASE}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:3000"]
       interval: 30s

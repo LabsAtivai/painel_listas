@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adicionar Lista</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d0f12;--surface:#161a1f;--surface2:#1c2128;--surface3:#242b34;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+    --text:#e8ecf0;--text2:#8b94a0;--text3:#5a636e;
+    --green:#22c55e;--green-dim:rgba(34,197,94,0.12);
+    --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.12);
+    --amber:#f59e0b;--amber-dim:rgba(245,158,11,0.12);
+    --red:#ef4444;--red-dim:rgba(239,68,68,0.12);
+    --purple:#a855f7;--purple-dim:rgba(168,85,247,0.12);
+    --radius:10px;--radius-lg:16px;
+  }
+  body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .header-logo{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600}
+  .header-logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .header-right{display:flex;align-items:center;gap:10px}
+  .header-nav-link{font-size:13px;color:var(--text2);text-decoration:none;padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border);transition:all 0.15s;background:none;cursor:pointer;font-family:'DM Sans',sans-serif}
+  .header-nav-link:hover{background:var(--surface3);color:var(--text)}
+  .header-nav-link.primary{background:var(--blue-dim);border-color:var(--blue);color:#93c5fd}
+
+  .main{padding:24px 28px 40px;display:flex;flex-direction:column;gap:18px;max-width:720px;width:100%;margin:0 auto}
+
+  .page-title{font-size:18px;font-weight:600}
+  .page-subtitle{font-size:13px;color:var(--text2);margin-top:4px;line-height:1.5}
+
+  .step-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px 22px;transition:opacity 0.15s}
+  .step-card.disabled{opacity:0.4;pointer-events:none}
+  .step-header{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+  .step-number{width:22px;height:22px;border-radius:50%;background:var(--blue-dim);color:#93c5fd;font-size:12px;font-weight:600;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .step-title{font-size:14px;font-weight:600}
+
+  .search-input,.text-input,.select-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color 0.15s}
+  .search-input:focus,.text-input:focus,.select-input:focus{border-color:var(--blue)}
+  .search-input::placeholder,.text-input::placeholder{color:var(--text3)}
+
+  .result-list{margin-top:10px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+  .result-item{display:flex;flex-direction:column;padding:9px 12px;border-radius:var(--radius);cursor:pointer;transition:background 0.1s;border:1px solid transparent}
+  .result-item:hover{background:var(--surface2)}
+  .result-item .principal{font-size:13px;color:var(--text)}
+  .result-item .secundario{font-size:11px;color:var(--text3)}
+  .result-empty{padding:14px;text-align:center;color:var(--text3);font-size:12px}
+
+  .selecionado-chip{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1px solid var(--blue);border-radius:var(--radius);padding:10px 14px}
+  .selecionado-info .principal{font-size:13px;color:var(--text);font-weight:500}
+  .selecionado-info .secundario{font-size:11px;color:var(--text3);margin-top:2px}
+  .btn-trocar{background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:5px 10px;font-size:11px;cursor:pointer;font-family:'DM Sans',sans-serif}
+  .btn-trocar:hover{background:var(--surface3);color:var(--text)}
+
+  .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .form-field{display:flex;flex-direction:column;gap:6px}
+  .form-field.full{grid-column:1 / -1}
+  .form-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em}
+
+  .btn-primary{background:var(--blue);color:white;border:none;border-radius:var(--radius);padding:11px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.15s;width:100%}
+  .btn-primary:hover{opacity:0.88}
+  .btn-primary:disabled{opacity:0.4;cursor:default}
+
+  .adicionados-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 22px}
+  .adicionados-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px}
+  .adicionado-item{display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px}
+  .adicionado-item:last-child{border-bottom:none}
+  .adicionado-item .campanha{color:var(--text)}
+  .adicionado-item .meta{color:var(--text3);font-size:11.5px}
+
+  .toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:999}
+  .toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:11px 14px;font-size:13px;display:flex;align-items:center;gap:10px;animation:toast-in 0.2s ease;min-width:240px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+  .toast.success{border-color:var(--green)}
+  .toast.error{border-color:var(--red)}
+  .toast.info{border-color:var(--blue)}
+  @keyframes toast-in{from{transform:translateX(16px);opacity:0}}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-logo">
+    <div class="header-logo-icon">📊</div>
+    Painel Relatórios
+  </div>
+  <div class="header-right">
+    <a class="header-nav-link" href="/">Ver dados</a>
+    <a class="header-nav-link" href="/executar">Rodar relatório</a>
+    <span class="header-nav-link primary">Adicionar lista</span>
+  </div>
+</header>
+
+<main class="main">
+  <div>
+    <div class="page-title">Adicionar lista</div>
+    <div class="page-subtitle">
+      Escolhe a conta Snovio, depois a campanha (vem do cache — não chama a API na hora),
+      preenche squad/disparos/e-mail e salva. Vai direto pro banco, aparece no relatório na hora.
+    </div>
+  </div>
+
+  <div class="step-card" id="stepConta">
+    <div class="step-header">
+      <span class="step-number">1</span>
+      <span class="step-title">Conta Snovio</span>
+    </div>
+    <div id="contaBuscaWrap">
+      <input class="search-input" id="buscaConta" placeholder="Digite o e-mail da conta Snovio..." oninput="onBuscaContaChange()" autocomplete="off"/>
+      <div class="result-list" id="resultadoContas"></div>
+    </div>
+    <div id="contaSelecionadaWrap" style="display:none">
+      <div class="selecionado-chip">
+        <div class="selecionado-info">
+          <div class="principal" id="contaSelecionadaEmail"></div>
+          <div class="secundario" id="contaSelecionadaConta"></div>
+        </div>
+        <button class="btn-trocar" onclick="trocarConta()">Trocar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card disabled" id="stepCampanha">
+    <div class="step-header">
+      <span class="step-number">2</span>
+      <span class="step-title">Campanha</span>
+    </div>
+    <div id="campanhaBuscaWrap">
+      <input class="search-input" id="buscaCampanha" placeholder="Filtrar campanhas dessa conta..." oninput="onBuscaCampanhaChange()" autocomplete="off"/>
+      <div class="result-list" id="resultadoCampanhas"></div>
+    </div>
+    <div id="campanhaSelecionadaWrap" style="display:none">
+      <div class="selecionado-chip">
+        <div class="selecionado-info">
+          <div class="principal" id="campanhaSelecionadaNome"></div>
+          <div class="secundario" id="campanhaSelecionadaStatus"></div>
+        </div>
+        <button class="btn-trocar" onclick="trocarCampanha()">Trocar</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-card disabled" id="stepDetalhes">
+    <div class="step-header">
+      <span class="step-number">3</span>
+      <span class="step-title">Detalhes</span>
+    </div>
+    <div class="form-grid">
+      <div class="form-field">
+        <label class="form-label">Squad</label>
+        <select class="select-input" id="squad">
+          <option value="Onboarding">Onboarding</option>
+          <option value="SDR REMOTO">SDR Remoto</option>
+          <option value="Geral">Geral</option>
+        </select>
+      </div>
+      <div class="form-field">
+        <label class="form-label">Disparos</label>
+        <input class="text-input" id="disparos" type="number" min="1" placeholder="Ex: 150"/>
+      </div>
+      <div class="form-field full">
+        <label class="form-label">E-mail da campanha (operador)</label>
+        <input class="text-input" id="contaEmail" type="text" placeholder="operador@mktcliente.com.br"/>
+      </div>
+    </div>
+    <button class="btn-primary" id="btnSalvar" onclick="salvar()">Adicionar ao squad</button>
+  </div>
+
+  <div class="adicionados-card" id="adicionadosCard" style="display:none">
+    <div class="adicionados-title">Adicionados agora</div>
+    <div id="listaAdicionados"></div>
+  </div>
+</main>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="adicionar-lista.js"></script>
+</body>
+</html>

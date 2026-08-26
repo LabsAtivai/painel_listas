@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
@@ -10,6 +11,13 @@ import { getClientes } from "./services/sheets.js";
 import { main as rodarGeralScript } from "./scripts/geral.mjs";
 import { main as rodarCampanhasScript } from "./scripts/relatoriocampanha1.mjs";
 import { main as rodarListasScript } from "./scripts/relatorioListasv2.mjs";
+import { main as rodarSincronizarScript } from "./scripts/sincronizarListas.mjs";
+import { getRelatorioListas } from "./services/relatorioListasReader.js";
+import {
+  buscarContasSnovio,
+  listarCampanhasPorConta,
+  adicionarListaSquad,
+} from "./services/listasSquadService.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -22,6 +30,20 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const PORT = 3000;
+
+/* ===========================================
+   ROTAS DE PÁGINA
+   / -> dados do relatório (index.html, servido pelo static acima)
+   /executar -> painel de execução dos scripts
+=========================================== */
+
+app.get("/executar", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "executar.html"));
+});
+
+app.get("/adicionar-lista", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "adicionar-lista.html"));
+});
 
 /* ===========================================
    Intercepta console.log dos scripts
@@ -76,36 +98,45 @@ app.post("/api/rodar", async (req, res) => {
   executarClientes(clientes);
 });
 
-async function executarClientes(clientes) {
-  const total = clientes.length;
-  let atual = 0;
-  let erros = 0;
+// clientes chega no formato de /api/clientes (getClientes(): email/api1/api2/snovioMail/senha) —
+// remapeia pro formato do sistema de credenciais (email/clientId/clientSecret/emailSnovio/senha)
+// que relatoriocampanha1.mjs e relatorioListasv2.mjs esperam.
+function paraFormatoCredenciais(clientes) {
+  return clientes.map((c) => ({
+    id: c.id,
+    email: c.email,
+    clientId: c.api1,
+    clientSecret: c.api2,
+    emailSnovio: c.snovioMail,
+    senha: c.senha,
+  }));
+}
+
+async function executarClientes(clientesSelecionados) {
+  const total = clientesSelecionados.length;
+  const clients = paraFormatoCredenciais(clientesSelecionados);
 
   io.emit("log", `━━━ Iniciando execução para ${total} cliente(s) ━━━`);
+  io.emit("progresso", 5);
 
-  for (const cliente of clientes) {
-    atual++;
-    io.emit("log", `→ Processando: ${cliente.email}`);
+  try {
+    io.emit("log", "→ Etapa 1: Campanhas...");
+    await rodarCampanhasScript(clients);
+    io.emit("log", "✔ Campanhas finalizadas");
+    io.emit("progresso", 50);
 
-    try {
-      /* Chame aqui seu script real por cliente, ex:
-         await rodarScriptPorCliente(cliente);
-      */
-      await new Promise(r => setTimeout(r, 1500));
-      io.emit("log", `✔ Finalizado: ${cliente.email}`);
-      io.emit("status", { processados: atual });
-    } catch (err) {
-      erros++;
-      io.emit("log", `ERRO em ${cliente.email}: ${err.message}`);
-      io.emit("status", { erros });
-    }
+    io.emit("log", "→ Etapa 2: Listas...");
+    await rodarListasScript(clients);
+    io.emit("log", "✔ Listas finalizadas");
+    io.emit("progresso", 100);
 
-    const progresso = Math.round((atual / total) * 100);
-    io.emit("progresso", progresso);
+    io.emit("status", { processados: total });
+    io.emit("log", `━━━ Processo concluído: ${total} cliente(s) processado(s) ━━━`);
+    io.emit("script-done", { btn: "btnSelecionados", msg: `${total} cliente(s) processado(s)` });
+  } catch (err) {
+    io.emit("log", `ERRO na execução dos selecionados: ${err.message}`);
+    io.emit("script-error", { btn: "btnSelecionados", msg: "Erro ao processar clientes selecionados" });
   }
-
-  io.emit("log", `━━━ Processo concluído: ${atual - erros}/${total} com sucesso ━━━`);
-  io.emit("script-done", { btn: "btnSelecionados", msg: `${atual - erros}/${total} clientes processados` });
 }
 
 /* ===========================================
@@ -163,6 +194,84 @@ app.post("/api/rodar-listas", async (req, res) => {
   } catch (err) {
     io.emit("log", "ERRO nas listas: " + err.message);
     io.emit("script-error", { btn: "btnListas", msg: "Erro ao rodar listas" });
+  }
+});
+
+/* ===========================================
+   SINCRONIZAR LISTAS (Adicionar/Retirar)
+=========================================== */
+
+app.post("/api/sincronizar-listas", async (req, res) => {
+  res.json({ status: "ok" });
+
+  io.emit("log", "━━━ Iniciando sincronização de listas ━━━");
+
+  try {
+    await rodarSincronizarScript();
+    io.emit("log", "✔ Sincronização finalizada");
+    io.emit("script-done", { btn: "btnSincronizar", msg: "Listas sincronizadas!" });
+  } catch (err) {
+    io.emit("log", "ERRO na sincronização: " + err.message);
+    io.emit("script-error", { btn: "btnSincronizar", msg: "Erro ao sincronizar listas" });
+  }
+});
+
+/* ===========================================
+   RELATÓRIO DE LISTAS (leitura da planilha)
+=========================================== */
+
+app.get("/api/relatorio-listas", async (req, res) => {
+  try {
+    const dados = await getRelatorioListas();
+    res.json(dados);
+  } catch (err) {
+    console.error("Erro ao buscar relatório de listas:", err);
+    res.status(500).json({ error: "Erro ao buscar relatório de listas" });
+  }
+});
+
+/* ===========================================
+   ADICIONAR LISTA (MySQL: contas_snovio / campanhas / listas_squad)
+=========================================== */
+
+app.get("/api/snovio/contas", async (req, res) => {
+  const busca = (req.query.busca || "").trim();
+  if (!busca) return res.json([]);
+  try {
+    const contas = await buscarContasSnovio(busca);
+    res.json(contas);
+  } catch (err) {
+    console.error("Erro ao buscar contas Snovio:", err);
+    res.status(500).json({ error: "Erro ao buscar contas Snovio" });
+  }
+});
+
+app.get("/api/snovio/campanhas", async (req, res) => {
+  const contaId = req.query.contaId;
+  if (!contaId) return res.status(400).json({ error: "Parâmetro 'contaId' é obrigatório" });
+  try {
+    const campanhas = await listarCampanhasPorConta(contaId);
+    res.json(campanhas);
+  } catch (err) {
+    console.error("Erro ao listar campanhas da conta:", err);
+    res.status(500).json({ error: "Erro ao listar campanhas da conta" });
+  }
+});
+
+app.post("/api/listas-squad", async (req, res) => {
+  const { campanhaId, squad, contaEmail, disparos } = req.body || {};
+  try {
+    const resultado = await adicionarListaSquad({
+      campanhaId,
+      squad,
+      contaEmail,
+      disparos: Number(disparos),
+    });
+    if (!resultado.ok) return res.status(400).json({ error: resultado.erro });
+    res.status(201).json({ status: "ok" });
+  } catch (err) {
+    console.error("Erro ao adicionar lista ao squad:", err);
+    res.status(500).json({ error: "Erro ao adicionar lista ao squad" });
   }
 });
 

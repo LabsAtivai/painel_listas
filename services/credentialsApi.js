@@ -37,6 +37,27 @@ async function fetchCredentials(http, accountId) {
   return data;
 }
 
+// Busca ao vivo (sem cache) — usada pelo passo 1 do formulário "Adicionar lista". Filtra por
+// account.email no próprio sistema de credenciais (`q`, barato, não descriptografa nada) e só
+// decripta a conta_snovio das poucas contas que já bateram no filtro, não da base inteira.
+export async function searchActiveAccounts(query, limit = 15) {
+  const http = client();
+  const { data } = await http.get("/api/accounts", {
+    params: { status: "ACTIVE", q: query, page: 1, page_size: limit },
+  });
+
+  const results = [];
+  for (const account of data.items) {
+    try {
+      const creds = await fetchCredentials(http, account.id);
+      results.push({ id: account.id, email: account.email, contaSnovio: creds.snov_email });
+    } catch (err) {
+      console.error(`Erro ao buscar credencial de ${account.email}:`, err.message);
+    }
+  }
+  return results;
+}
+
 // Substitui a antiga leitura da aba "contas" do Google Sheets.
 // Retorna o mesmo formato consumido pelos scripts: { email, clientId, clientSecret, emailSnovio, senha }
 export async function getActiveClients() {
@@ -47,6 +68,7 @@ export async function getActiveClients() {
   for (const account of accounts) {
     const creds = await fetchCredentials(http, account.id);
     clients.push({
+      id: account.id,
       email: account.email,
       clientId: creds.snov_id,
       clientSecret: creds.snov_secret,

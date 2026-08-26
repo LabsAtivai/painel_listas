@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Executar Relatórios</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#0d0f12;--surface:#161a1f;--surface2:#1c2128;--surface3:#242b34;
+    --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+    --text:#e8ecf0;--text2:#8b94a0;--text3:#5a636e;
+    --green:#22c55e;--green-dim:rgba(34,197,94,0.12);
+    --blue:#3b82f6;--blue-dim:rgba(59,130,246,0.12);
+    --amber:#f59e0b;--amber-dim:rgba(245,158,11,0.12);
+    --red:#ef4444;--red-dim:rgba(239,68,68,0.12);
+    --purple:#a855f7;--purple-dim:rgba(168,85,247,0.12);
+    --radius:10px;--radius-lg:16px;
+  }
+  body{font-family:'DM Sans',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+  .header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 28px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+  .header-logo{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600}
+  .header-logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px}
+  .header-right{display:flex;align-items:center;gap:16px}
+  .header-nav-link{font-size:13px;color:var(--text2);text-decoration:none;padding:7px 14px;border-radius:var(--radius);border:1px solid var(--border);transition:all 0.15s}
+  .header-nav-link:hover{background:var(--surface3);color:var(--text)}
+  .header-status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--text2)}
+  .status-dot{width:8px;height:8px;border-radius:50%;background:var(--text3);transition:background 0.3s}
+  .status-dot.connected{background:var(--green);box-shadow:0 0 6px var(--green)}
+  .layout{display:grid;grid-template-columns:300px 1fr;flex:1;min-height:calc(100vh - 60px)}
+  .sidebar{background:var(--surface);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;gap:6px}
+  .sidebar-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;padding:4px 8px;margin-bottom:2px;margin-top:6px}
+  .action-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:transparent;cursor:pointer;transition:all 0.15s;width:100%;text-align:left;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500}
+  .action-btn:hover{background:var(--surface3);border-color:var(--border2)}
+  .action-btn:active{transform:scale(0.98)}
+  .action-btn.running{border-color:var(--amber);background:var(--amber-dim)}
+  .action-btn.done{border-color:var(--green);background:var(--green-dim)}
+  .action-btn.error-state{border-color:var(--red);background:var(--red-dim)}
+  .action-btn.featured{border-color:var(--blue);background:var(--blue-dim)}
+  .btn-icon{width:30px;height:30px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+  .btn-blue .btn-icon{background:var(--blue-dim)}
+  .btn-green .btn-icon{background:var(--green-dim)}
+  .btn-amber .btn-icon{background:var(--amber-dim)}
+  .btn-purple .btn-icon{background:var(--purple-dim)}
+  .btn-info{flex:1;min-width:0}
+  .btn-label{display:block;font-size:13px;font-weight:500;line-height:1.2}
+  .btn-desc{display:block;font-size:11px;color:var(--text2);margin-top:1px}
+  .btn-spinner{width:14px;height:14px;border:2px solid var(--border2);border-top-color:var(--amber);border-radius:50%;animation:spin 0.7s linear infinite;display:none;flex-shrink:0}
+  .action-btn.running .btn-spinner{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .divider{height:1px;background:var(--border);margin:6px 0}
+  .clients-btn{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border2);background:var(--surface2);cursor:pointer;transition:all 0.15s;width:100%;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500}
+  .clients-btn:hover{background:var(--surface3)}
+  .clients-badge{margin-left:auto;background:var(--blue-dim);color:#93c5fd;border-radius:20px;padding:2px 9px;font-size:12px;font-weight:600}
+  .main{padding:24px;display:flex;flex-direction:column;gap:16px;overflow-y:auto}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 22px}
+  .card-title{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:12px}
+  .stats-row{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:14px 16px}
+  .stat-label{font-size:11px;color:var(--text3);margin-bottom:6px}
+  .stat-value{font-size:26px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--text)}
+  .stat-value.green{color:var(--green)}
+  .stat-value.red{color:var(--red)}
+  .progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .progress-label{font-size:13px;color:var(--text2)}
+  .progress-pct{font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace}
+  .progress-track{height:6px;background:var(--surface3);border-radius:99px;overflow:hidden}
+  .progress-bar{height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--purple));border-radius:99px;transition:width 0.4s ease}
+  .logs-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+  .logs-actions{display:flex;gap:6px}
+  .logs-btn{background:none;border:1px solid var(--border);color:var(--text2);border-radius:6px;padding:4px 10px;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s}
+  .logs-btn:hover{background:var(--surface3);color:var(--text)}
+  #logs{background:#0a0c0e;border:1px solid var(--border);border-radius:var(--radius);padding:12px;height:300px;overflow-y:auto;font-family:'JetBrains Mono',monospace;font-size:12px;line-height:1.7;scroll-behavior:smooth}
+  #logs::-webkit-scrollbar{width:3px}
+  #logs::-webkit-scrollbar-thumb{background:var(--surface3);border-radius:2px}
+  .log-line{display:flex;gap:10px;padding:1px 0}
+  .log-time{color:var(--text3);flex-shrink:0}
+  .log-msg{color:#a3b4c6}
+  .log-msg.success{color:var(--green)}
+  .log-msg.error{color:var(--red)}
+  .log-msg.warn{color:var(--amber)}
+  .log-msg.info{color:#60a5fa}
+  .log-msg.system{color:var(--purple)}
+  .log-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:var(--text3);font-size:12px;gap:8px;font-family:'DM Sans',sans-serif}
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:200}
+  .modal-overlay.open{display:flex}
+  .modal{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius-lg);width:600px;max-width:calc(100vw - 32px);max-height:82vh;display:flex;flex-direction:column;overflow:hidden;animation:modal-in 0.2s ease}
+  @keyframes modal-in{from{transform:translateY(10px);opacity:0}}
+  .modal-header{padding:18px 22px 14px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0}
+  .modal-title{font-size:15px;font-weight:600}
+  .modal-subtitle{font-size:12px;color:var(--text2);margin-top:2px}
+  .modal-close{background:none;border:1px solid var(--border);color:var(--text2);width:28px;height:28px;border-radius:6px;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;transition:all 0.15s}
+  .modal-close:hover{background:var(--surface3);color:var(--text)}
+  .modal-search{padding:12px 22px;border-bottom:1px solid var(--border);flex-shrink:0}
+  .search-input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color 0.15s}
+  .search-input:focus{border-color:var(--blue)}
+  .search-input::placeholder{color:var(--text3)}
+  .modal-list-header{padding:6px 22px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+  .modal-list-header span{font-size:11px;color:var(--text3)}
+  .select-all-btn{background:none;border:none;color:#60a5fa;font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0}
+  .select-all-btn:hover{text-decoration:underline}
+  .modal-body{overflow-y:auto;flex:1;padding:0 22px 4px}
+  .modal-body::-webkit-scrollbar{width:3px}
+  .modal-body::-webkit-scrollbar-thumb{background:var(--surface3)}
+  .client-row{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:var(--radius);cursor:pointer;transition:background 0.1s;border-bottom:1px solid var(--border)}
+  .client-row:last-child{border-bottom:none}
+  .client-row:hover{background:var(--surface2)}
+  .client-row input[type=checkbox]{width:14px;height:14px;flex-shrink:0;cursor:pointer;accent-color:var(--blue)}
+  .client-avatar{width:28px;height:28px;border-radius:50%;background:var(--blue-dim);color:#93c5fd;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0}
+  .client-info{flex:1;min-width:0}
+  .client-email{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .client-snov{font-size:11px;color:var(--text3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .modal-footer{padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+  .modal-footer-info{font-size:13px;color:var(--text2)}
+  .modal-footer-info b{color:var(--text);font-weight:600}
+  .btn-primary{background:var(--blue);color:white;border:none;border-radius:var(--radius);padding:9px 18px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.15s}
+  .btn-primary:hover{opacity:0.88}
+  .toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:999}
+  .toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:11px 14px;font-size:13px;display:flex;align-items:center;gap:10px;animation:toast-in 0.2s ease;min-width:240px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
+  .toast.success{border-color:var(--green)}
+  .toast.error{border-color:var(--red)}
+  .toast.info{border-color:var(--blue)}
+  @keyframes toast-in{from{transform:translateX(16px);opacity:0}}
+  .schedule-card{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);border:1px solid var(--border);background:var(--surface2)}
+  .schedule-icon{font-size:18px;flex-shrink:0}
+  .schedule-info{flex:1;display:flex;flex-direction:column;gap:1px}
+  .schedule-label{font-size:12px;font-weight:500;color:var(--text)}
+  .schedule-time{font-size:11px;color:var(--text2)}
+  .schedule-next{font-size:10px;color:var(--text3);font-family:'JetBrains Mono',monospace}
+  .schedule-status{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;padding:3px 8px;border-radius:20px;flex-shrink:0;background:var(--green-dim);color:var(--green)}
+  .schedule-card.running .schedule-status{background:var(--amber-dim);color:var(--amber)}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-logo">
+    <div class="header-logo-icon">📊</div>
+    Painel Relatórios
+  </div>
+  <div class="header-right">
+    <a class="header-nav-link" href="/">← Ver dados</a>
+    <a class="header-nav-link" href="/adicionar-lista">Adicionar lista</a>
+    <div class="header-status">
+      <div class="status-dot" id="statusDot"></div>
+      <span id="statusText">Conectando...</span>
+    </div>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <p class="sidebar-title">Clientes</p>
+    <button class="clients-btn" onclick="abrirModal()">
+      <span>👥</span>
+      <span>Selecionar clientes</span>
+      <span class="clients-badge" id="badgeSelecionados">0</span>
+    </button>
+
+    <div class="divider"></div>
+    <p class="sidebar-title">Executar</p>
+
+    <button class="action-btn btn-blue featured" id="btnSelecionados" onclick="rodarSelecionados()">
+      <span class="btn-icon">▶️</span>
+      <span class="btn-info">
+        <span class="btn-label">Rodar selecionados</span>
+        <span class="btn-desc">Apenas os clientes marcados</span>
+      </span>
+      <div class="btn-spinner"></div>
+    </button>
+
+    <button class="action-btn btn-green" id="btnGeral" onclick="rodarGeral()">
+      <span class="btn-icon">⚡</span>
+      <span class="btn-info">
+        <span class="btn-label">Rodar geral</span>
+        <span class="btn-desc">Campanhas + Listas em sequência</span>
+      </span>
+      <div class="btn-spinner"></div>
+    </button>
+
+    <div class="divider"></div>
+    <p class="sidebar-title">Scripts individuais</p>
+
+    <button class="action-btn btn-amber" id="btnCampanhas" onclick="rodarCampanhas()">
+      <span class="btn-icon">📣</span>
+      <span class="btn-info">
+        <span class="btn-label">Campanhas</span>
+        <span class="btn-desc">Atualiza dados de campanhas</span>
+      </span>
+      <div class="btn-spinner"></div>
+    </button>
+
+    <button class="action-btn btn-purple" id="btnListas" onclick="rodarListas()">
+      <span class="btn-icon">📋</span>
+      <span class="btn-info">
+        <span class="btn-label">Listas</span>
+        <span class="btn-desc">Verifica ativos nas listas</span>
+      </span>
+      <div class="btn-spinner"></div>
+    </button>
+
+    <button class="action-btn btn-green" id="btnSincronizar" onclick="rodarSincronizar()">
+      <span class="btn-icon">🔄</span>
+      <span class="btn-info">
+        <span class="btn-label">Sincronizar listas</span>
+        <span class="btn-desc">Adicionar/Retirar da planilha</span>
+      </span>
+      <div class="btn-spinner"></div>
+    </button>
+
+    <div class="divider"></div>
+    <p class="sidebar-title">Agendamento</p>
+    <div class="schedule-card" id="scheduleCard">
+      <div class="schedule-icon">🕐</div>
+      <div class="schedule-info">
+        <span class="schedule-label">Execução diária</span>
+        <span class="schedule-time">Todos os dias às 19:00</span>
+        <span class="schedule-next" id="scheduleNext"></span>
+      </div>
+      <div class="schedule-status" id="scheduleStatus">Ativo</div>
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Clientes selecionados</div>
+        <div class="stat-value" id="statSelecionados">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Processados</div>
+        <div class="stat-value green" id="statProcessados">0</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Erros</div>
+        <div class="stat-value red" id="statErros">0</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <p class="card-title">Progresso</p>
+      <div class="progress-header">
+        <span class="progress-label" id="progressLabel">Aguardando execução...</span>
+        <span class="progress-pct" id="progressPct">0%</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar" id="barraProgresso"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="logs-header">
+        <p class="card-title" style="margin-bottom:0">Logs em tempo real</p>
+        <div class="logs-actions">
+          <button class="logs-btn" onclick="limparLogs()">Limpar</button>
+          <button class="logs-btn" onclick="exportarLogs()">Exportar .txt</button>
+        </div>
+      </div>
+      <div id="logs">
+        <div class="log-empty">
+          <span style="font-size:22px;opacity:0.4">🖥</span>
+          <span>Os logs aparecerão aqui quando uma execução iniciar</span>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalClientes">
+  <div class="modal">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">Selecionar clientes</div>
+        <div class="modal-subtitle">Marque os clientes que devem ser processados</div>
+      </div>
+      <button class="modal-close" onclick="fecharModal()">✕</button>
+    </div>
+    <div class="modal-search">
+      <input class="search-input" id="filtroClientes" placeholder="🔍  Buscar por email ou conta Snov.io..." oninput="filtrarClientes()"/>
+    </div>
+    <div class="modal-list-header">
+      <span id="countFiltrados">— clientes</span>
+      <button class="select-all-btn" onclick="toggleTodos()">Selecionar todos</button>
+    </div>
+    <div class="modal-body" id="listaClientes">
+      <div style="padding:40px;text-align:center;color:var(--text3);font-size:13px">Carregando...</div>
+    </div>
+    <div class="modal-footer">
+      <span class="modal-footer-info"><b id="contador">0</b> selecionados</span>
+      <button class="btn-primary" onclick="fecharModal()">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script src="executar.js"></script>
+</body>
+</html>
