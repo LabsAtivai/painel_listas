@@ -78,7 +78,7 @@
   .status-pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;margin-top:5px}
   .status-pill.critico{background:var(--red-dim);color:var(--red)}
   .status-pill.atencao{background:var(--amber-dim);color:var(--amber)}
-  .status-pill.ok{background:var(--green-dim);color:var(--green)}
+  .status-pill.saudavel{background:var(--green-dim);color:var(--green)}
   .status-pill.erro{background:var(--purple-dim);color:var(--purple)}
 
   .cell-mono{font-family:'JetBrains Mono',monospace}
@@ -158,9 +158,10 @@
     <input class="search-input" id="filtroCampanha" placeholder="🔍  Buscar campanha ou conta..." oninput="onFiltroChange()"/>
     <select class="select-input" id="filtroStatus" onchange="onFiltroChange()">
       <option value="todos">Status: Todos</option>
-      <option value="critico">Status: Crítico (&lt; 3 dias)</option>
-      <option value="atencao">Status: Atenção (3–10 dias)</option>
-      <option value="ok">Status: Saudável (&gt; 10 dias)</option>
+      <option value="critico">Status: Crítico (&lt; 4 dias)</option>
+      <option value="atencao">Status: Atenção (4–7 dias)</option>
+      <option value="saudavel">Status: Saudável (7–10 dias)</option>
+      <option value="nada">Status: Sem alerta (&gt; 10 dias)</option>
       <option value="erro">Status: Com erro</option>
     </select>
   </div>
@@ -171,7 +172,7 @@
       <div class="kpi-value" id="kpiDisparos">—</div>
     </div>
     <div class="kpi-card critico" id="kpiCardCriticas">
-      <div class="kpi-label">Contas críticas (&lt; 3 dias) ⚠️</div>
+      <div class="kpi-label">Contas críticas (&lt; 4 dias) ⚠️</div>
       <div class="kpi-value" id="kpiCriticas">—</div>
     </div>
     <div class="kpi-card">

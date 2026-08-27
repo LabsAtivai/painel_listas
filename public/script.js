@@ -6,8 +6,9 @@ let pageSize = 25;
 let sortField = 'diasRestantes';
 let sortDir = 'asc';
 
-const CRITICO_DIAS = 3;
-const ATENCAO_DIAS = 10;
+const CRITICO_DIAS = 4;
+const ATENCAO_DIAS = 7;
+const SAUDAVEL_DIAS = 10;
 const TIMEZONE = 'America/Sao_Paulo';
 
 function escapeHtml(str) {
@@ -119,10 +120,11 @@ function onPageSizeChange() {
 
 function classificarLinha(l) {
   if (l.status === 'erro') return 'erro';
-  if (l.diasRestantes == null) return 'ok';
+  if (l.diasRestantes == null) return 'nada';
   if (l.diasRestantes < CRITICO_DIAS) return 'critico';
   if (l.diasRestantes < ATENCAO_DIAS) return 'atencao';
-  return 'ok';
+  if (l.diasRestantes < SAUDAVEL_DIAS) return 'saudavel';
+  return 'nada';
 }
 
 function render() {
@@ -208,7 +210,8 @@ function renderLinha(l, maxAtivos) {
     erro: '<span class="status-pill erro">⚠️ Erro</span>',
     critico: '<span class="status-pill critico">🔴 Crítico</span>',
     atencao: '<span class="status-pill atencao">🟡 Atenção</span>',
-    ok: '<span class="status-pill ok">🟢 Saudável</span>',
+    saudavel: '<span class="status-pill saudavel">🟢 Saudável</span>',
+    nada: '',
   };
   const pill = pills[classe];
 
@@ -249,14 +252,15 @@ function renderReportSummary() {
     const info = relatorioData.squads[sq];
     if (!info) return '';
 
-    let criticas = 0, atencao = 0, saudaveis = 0, totalDisparos = 0;
+    let criticas = 0, atencao = 0, saudaveis = 0, semAlerta = 0, totalDisparos = 0;
     for (const l of info.linhas) {
       if (l.status === 'erro') continue;
       totalDisparos += l.disparos || 0;
       const classe = classificarLinha(l);
       if (classe === 'critico') criticas++;
       else if (classe === 'atencao') atencao++;
-      else saudaveis++;
+      else if (classe === 'saudavel') saudaveis++;
+      else semAlerta++;
     }
 
     return `
@@ -265,15 +269,19 @@ function renderReportSummary() {
         <div class="report-stats">
           <div class="report-stat-tile critico ${criticas > 0 ? 'tem-valor' : ''}">
             <div class="report-stat-value">${formatNumero(criticas)}</div>
-            <div class="report-stat-label">🔴 Crítico (&lt; 3 dias)</div>
+            <div class="report-stat-label">🔴 Crítico (&lt; 4 dias)</div>
           </div>
           <div class="report-stat-tile atencao">
             <div class="report-stat-value">${formatNumero(atencao)}</div>
-            <div class="report-stat-label">🟡 Atenção (3–10 dias)</div>
+            <div class="report-stat-label">🟡 Atenção (4–7 dias)</div>
           </div>
           <div class="report-stat-tile saudavel">
             <div class="report-stat-value">${formatNumero(saudaveis)}</div>
-            <div class="report-stat-label">🟢 Saudável (&gt; 10 dias)</div>
+            <div class="report-stat-label">🟢 Saudável (7–10 dias)</div>
+          </div>
+          <div class="report-stat-tile neutro">
+            <div class="report-stat-value">${formatNumero(semAlerta)}</div>
+            <div class="report-stat-label">Sem alerta (&gt; 10 dias)</div>
           </div>
           <div class="report-stat-tile neutro">
             <div class="report-stat-value">${formatNumero(totalDisparos)}</div>

@@ -227,14 +227,15 @@ relação ao documento original, e o motivo de cada uma:
 | Coluna de Ações (editar/pausar/exportar) | Omitida | Painel é somente leitura; não há endpoint de escrita/mutação em campanha implementado, então o menu ficaria só decorativo. |
 | KPI "Contas Críticas" vindo de fonte separada | Calculado no cliente a partir das mesmas linhas da grid (`diasRestantes < CRITICO_DIAS`) | Garante que o número do card bate exatamente com a contagem de badges 🔴 visíveis na tabela — a aba `reports` (fonte original desse número) é manual e ficou defasada em relação às abas de squad. |
 
-**Faixas de prazo** (`diasRestantes`, definidas pelo usuário — constantes `CRITICO_DIAS`/`ATENCAO_DIAS`
-em `public/script.js`):
+**Faixas de prazo** (`diasRestantes`, definidas pelo usuário — constantes `CRITICO_DIAS`/`ATENCAO_DIAS`/
+`SAUDAVEL_DIAS` em `public/script.js`):
 
 | Faixa | Cor | Pill | Chip de prazo |
 |---|---|---|---|
-| `< 3` dias | 🔴 vermelho | Crítico | ⚠️ vermelho |
-| `3` a `< 10` dias | 🟡 amarelo | Atenção | ⚠️ amarelo |
-| `≥ 10` dias (ou sem dado) | 🟢 verde | Saudável | neutro |
+| `< 4` dias | 🔴 vermelho | Crítico | ⚠️ vermelho |
+| `4` a `< 7` dias | 🟡 amarelo | Atenção | ⚠️ amarelo |
+| `7` a `< 10` dias | 🟢 verde | Saudável | neutro |
+| `≥ 10` dias (ou sem dado) | nenhuma | sem pill | neutro |
 | `status: "erro"` (fórmula quebrada na planilha) | 🟣 roxo | Erro | `—` (sem prazo confiável) |
 
 Erro usa roxo (não amarelo) de propósito: amarelo já é o tom de "atenção" no prazo, então reaproveitar
@@ -254,13 +255,14 @@ Estrutura implementada (`public/index.html` + `public/script.js`):
 - Abas de squad: Onboarding / SDR Remoto / Geral — trocar de aba reseta busca, filtro de status e
   paginação.
 - Barra de filtros: busca texto (campanha/conta/cliente) + select de status (Todos / Crítico /
-  Atenção / Saudável / Com erro).
+  Atenção / Saudável / Sem alerta / Com erro).
 - 3 KPI cards por squad, calculados sobre **todas** as linhas do squad (não afetados pelos filtros
-  da tabela): Total de disparos, Contas críticas (`diasRestantes < 3`, com borda vermelha), Total de
+  da tabela): Total de disparos, Contas críticas (`diasRestantes < 4`, com borda vermelha), Total de
   ativos restantes.
-- Grid: Campanha + pill de status (🔴 Crítico / 🟡 Atenção / 🟢 Saudável / 🟣 Erro) · Contas em célula
-  dupla (e-mail operador em destaque, conta Snov.io do cliente em cinza) · Disparos (mono, alinhado à
-  direita) · Ativos restantes com barra sutil · Prazo (data + ⚠️ na cor da faixa quando crítico/atenção).
+- Grid: Campanha + pill de status (🔴 Crítico / 🟡 Atenção / 🟢 Saudável / sem pill quando "sem alerta"
+  / 🟣 Erro) · Contas em célula dupla (e-mail operador em destaque, conta Snov.io do cliente em cinza) ·
+  Disparos (mono, alinhado à direita) · Ativos restantes com barra sutil · Prazo (data + ⚠️ na cor da
+  faixa quando crítico/atenção).
   Linha com `status:"erro"` fica com opacidade reduzida e pill de erro, mas não é removida.
   Ordenação segue a ordem que vem da planilha (não há colunas de ordenação implementadas).
 - Paginação: seletor 10/25/50 por página, botões prev/next + números de página, texto
