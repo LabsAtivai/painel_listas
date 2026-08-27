@@ -2,7 +2,8 @@ let relatorioData = null;
 let squadAtual = 'Onboarding';
 let pagina = 1;
 let pageSize = 25;
-let sortField = null;
+// Prioridade primeiro por padrão: crítico (menos dias) no topo, sem precisar clicar em nada.
+let sortField = 'diasRestantes';
 let sortDir = 'asc';
 
 const CRITICO_DIAS = 3;
@@ -51,13 +52,15 @@ async function carregarRelatorio() {
 function selecionarSquad(squad) {
   squadAtual = squad;
   pagina = 1;
-  sortField = null;
+  sortField = 'diasRestantes';
   sortDir = 'asc';
   document.querySelectorAll('.squad-tab').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.squad === squad);
   });
   document.getElementById('filtroCampanha').value = '';
   document.getElementById('filtroStatus').value = 'todos';
+  document.getElementById('squadView').style.display = squad === 'Report' ? 'none' : '';
+  document.getElementById('reportView').style.display = squad === 'Report' ? '' : 'none';
   render();
 }
 
@@ -124,6 +127,12 @@ function classificarLinha(l) {
 
 function render() {
   if (!relatorioData) return;
+
+  if (squadAtual === 'Report') {
+    renderReportSummary();
+    return;
+  }
+
   const squadInfo = relatorioData.squads[squadAtual];
   const body = document.getElementById('gridBody');
 
@@ -175,6 +184,7 @@ function renderKpis(squadInfo) {
     document.getElementById('kpiDisparos').textContent = '—';
     document.getElementById('kpiCriticas').textContent = '—';
     document.getElementById('kpiAtivos').textContent = '—';
+    document.getElementById('kpiCardCriticas').classList.remove('tem-criticas');
     return;
   }
   let totalDisparos = 0;
@@ -189,6 +199,7 @@ function renderKpis(squadInfo) {
   document.getElementById('kpiDisparos').textContent = formatNumero(totalDisparos);
   document.getElementById('kpiCriticas').textContent = formatNumero(criticas);
   document.getElementById('kpiAtivos').textContent = formatNumero(totalAtivos);
+  document.getElementById('kpiCardCriticas').classList.toggle('tem-criticas', criticas > 0);
 }
 
 function renderLinha(l, maxAtivos) {
@@ -207,8 +218,10 @@ function renderLinha(l, maxAtivos) {
   const prazoClasse = emAlerta ? `prazo-chip ${classe}` : 'prazo-chip';
   const prazoIcon = emAlerta ? '⚠️ ' : '';
 
+  const linhaClasse = classe === 'erro' ? 'row-erro' : classe === 'critico' ? 'row-critico' : classe === 'atencao' ? 'row-atencao' : '';
+
   return `
-    <tr class="${classe === 'erro' ? 'row-erro' : ''}">
+    <tr class="${linhaClasse}">
       <td>
         <div class="cell-campanha">${escapeHtml(l.campanha || '—')}</div>
         ${pill}
@@ -225,6 +238,51 @@ function renderLinha(l, maxAtivos) {
       </td>
     </tr>
   `;
+}
+
+function renderReportSummary() {
+  const squads = ['Onboarding', 'SDR REMOTO', 'Geral'];
+  const nomes = { 'Onboarding': 'Onboarding', 'SDR REMOTO': 'SDR Remoto', 'Geral': 'Geral' };
+  const grid = document.getElementById('reportGrid');
+
+  grid.innerHTML = squads.map(sq => {
+    const info = relatorioData.squads[sq];
+    if (!info) return '';
+
+    let criticas = 0, atencao = 0, saudaveis = 0, totalDisparos = 0;
+    for (const l of info.linhas) {
+      if (l.status === 'erro') continue;
+      totalDisparos += l.disparos || 0;
+      const classe = classificarLinha(l);
+      if (classe === 'critico') criticas++;
+      else if (classe === 'atencao') atencao++;
+      else saudaveis++;
+    }
+
+    return `
+      <div class="report-squad-card">
+        <div class="report-squad-title">${escapeHtml(nomes[sq])}</div>
+        <div class="report-stats">
+          <div class="report-stat-tile critico ${criticas > 0 ? 'tem-valor' : ''}">
+            <div class="report-stat-value">${formatNumero(criticas)}</div>
+            <div class="report-stat-label">🔴 Crítico (&lt; 3 dias)</div>
+          </div>
+          <div class="report-stat-tile atencao">
+            <div class="report-stat-value">${formatNumero(atencao)}</div>
+            <div class="report-stat-label">🟡 Atenção (3–10 dias)</div>
+          </div>
+          <div class="report-stat-tile saudavel">
+            <div class="report-stat-value">${formatNumero(saudaveis)}</div>
+            <div class="report-stat-label">🟢 Saudável (&gt; 10 dias)</div>
+          </div>
+          <div class="report-stat-tile neutro">
+            <div class="report-stat-value">${formatNumero(totalDisparos)}</div>
+            <div class="report-stat-label">Disparos</div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 
 function renderFooter(total, inicio, fim) {

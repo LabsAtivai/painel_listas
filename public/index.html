@@ -51,6 +51,9 @@
   .kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
   .kpi-value{font-size:26px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--text)}
   .kpi-card.critico .kpi-value{color:var(--red)}
+  .kpi-card.critico.tem-criticas{background:linear-gradient(135deg,rgba(239,68,68,0.28),rgba(239,68,68,0.08));border-color:var(--red);box-shadow:0 0 0 1px rgba(239,68,68,0.35),0 6px 24px rgba(239,68,68,0.2)}
+  .kpi-card.critico.tem-criticas .kpi-label{color:#fca5a5}
+  .kpi-card.critico.tem-criticas .kpi-value{color:#fecaca}
 
   .grid-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden}
   .grid-table-wrap{overflow-x:auto}
@@ -64,6 +67,12 @@
   .grid-table tr:last-child td{border-bottom:none}
   .grid-table tr:hover td{background:var(--surface2)}
   .grid-table tr.row-erro td{opacity:0.55}
+  .grid-table tr.row-critico td{background:rgba(239,68,68,0.10)}
+  .grid-table tr.row-critico td:first-child{box-shadow:inset 3px 0 0 0 var(--red)}
+  .grid-table tr.row-critico:hover td{background:rgba(239,68,68,0.17)}
+  .grid-table tr.row-atencao td{background:rgba(245,158,11,0.08)}
+  .grid-table tr.row-atencao td:first-child{box-shadow:inset 3px 0 0 0 var(--amber)}
+  .grid-table tr.row-atencao:hover td{background:rgba(245,158,11,0.14)}
 
   .cell-campanha{font-weight:500;color:var(--text)}
   .status-pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;padding:3px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:0.04em;margin-top:5px}
@@ -81,6 +90,23 @@
   .prazo-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text2)}
   .prazo-chip.critico{color:var(--red);font-weight:600}
   .prazo-chip.atencao{color:var(--amber);font-weight:600}
+
+  .report-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:16px}
+  .report-squad-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:22px}
+  .report-squad-title{font-size:17px;font-weight:600;margin-bottom:16px}
+  .report-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+  .report-stat-tile{border-radius:var(--radius);padding:18px 16px;text-align:center}
+  .report-stat-value{font-size:34px;font-weight:700;font-family:'JetBrains Mono',monospace;line-height:1.1}
+  .report-stat-label{font-size:11px;text-transform:uppercase;letter-spacing:0.06em;margin-top:8px;color:var(--text2)}
+  .report-stat-tile.critico{background:var(--red-dim);border:1px solid rgba(239,68,68,0.3)}
+  .report-stat-tile.critico .report-stat-value{color:var(--red)}
+  .report-stat-tile.critico.tem-valor{background:rgba(239,68,68,0.22);border-color:rgba(239,68,68,0.55)}
+  .report-stat-tile.atencao{background:var(--amber-dim);border:1px solid rgba(245,158,11,0.3)}
+  .report-stat-tile.atencao .report-stat-value{color:var(--amber)}
+  .report-stat-tile.saudavel{background:var(--green-dim);border:1px solid rgba(34,197,94,0.3)}
+  .report-stat-tile.saudavel .report-stat-value{color:var(--green)}
+  .report-stat-tile.neutro{background:var(--surface2);border:1px solid var(--border)}
+  .report-stat-tile.neutro .report-stat-value{color:var(--text)}
 
   .grid-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid var(--border);flex-wrap:wrap;gap:10px}
   .grid-footer-info{font-size:12px;color:var(--text3)}
@@ -124,8 +150,10 @@
     <button class="squad-tab active" data-squad="Onboarding" onclick="selecionarSquad('Onboarding')">Onboarding</button>
     <button class="squad-tab" data-squad="SDR REMOTO" onclick="selecionarSquad('SDR REMOTO')">SDR Remoto</button>
     <button class="squad-tab" data-squad="Geral" onclick="selecionarSquad('Geral')">Geral</button>
+    <button class="squad-tab" data-squad="Report" onclick="selecionarSquad('Report')">Report</button>
   </div>
 
+  <div id="squadView">
   <div class="filters-bar">
     <input class="search-input" id="filtroCampanha" placeholder="🔍  Buscar campanha ou conta..." oninput="onFiltroChange()"/>
     <select class="select-input" id="filtroStatus" onchange="onFiltroChange()">
@@ -142,7 +170,7 @@
       <div class="kpi-label">Total de disparos</div>
       <div class="kpi-value" id="kpiDisparos">—</div>
     </div>
-    <div class="kpi-card critico">
+    <div class="kpi-card critico" id="kpiCardCriticas">
       <div class="kpi-label">Contas críticas (&lt; 3 dias) ⚠️</div>
       <div class="kpi-value" id="kpiCriticas">—</div>
     </div>
@@ -181,6 +209,11 @@
         <div class="pagination" id="pagination"></div>
       </div>
     </div>
+  </div>
+  </div>
+
+  <div id="reportView" style="display:none">
+    <div class="report-grid" id="reportGrid"></div>
   </div>
 </main>
 
