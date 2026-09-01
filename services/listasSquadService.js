@@ -95,3 +95,13 @@ export async function atualizarListaSquad(id, { disparos, contaEmail, squad }) {
     throw err;
   }
 }
+
+export async function removerListaSquad(id) {
+  const pool = getPool();
+  const [result] = await pool.query("DELETE FROM listas_squad WHERE id = ?", [id]);
+
+  if (result.affectedRows === 0) {
+    return { ok: false, erro: "Entrada não encontrada." };
+  }
+  return { ok: true };
+}

@@ -58,6 +58,34 @@ export async function searchActiveAccounts(query, limit = 15) {
   return results;
 }
 
+// Busca ao vivo (sem cache) — usada pelo modal "Selecionar clientes" do /executar. Mesmo filtro
+// barato de searchActiveAccounts, mas já retorna as credenciais completas (necessárias pra rodar
+// os scripts), evitando o custo de decriptar a base inteira como getActiveClients faz.
+export async function searchActiveClients(query, limit = 15) {
+  const http = client();
+  const { data } = await http.get("/api/accounts", {
+    params: { status: "ACTIVE", q: query, page: 1, page_size: limit },
+  });
+
+  const clients = [];
+  for (const account of data.items) {
+    try {
+      const creds = await fetchCredentials(http, account.id);
+      clients.push({
+        id: account.id,
+        email: account.email,
+        clientId: creds.snov_id,
+        clientSecret: creds.snov_secret,
+        emailSnovio: creds.snov_email,
+        senha: creds.snov_password,
+      });
+    } catch (err) {
+      console.error(`Erro ao buscar credencial de ${account.email}:`, err.message);
+    }
+  }
+  return clients;
+}
+
 // Substitui a antiga leitura da aba "contas" do Google Sheets.
 // Retorna o mesmo formato consumido pelos scripts: { email, clientId, clientSecret, emailSnovio, senha }
 export async function getActiveClients() {

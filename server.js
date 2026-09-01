@@ -6,7 +6,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import cron from "node-cron";
 
-import { getClientes } from "./services/sheets.js";
+import { getClientes, buscarClientes } from "./services/sheets.js";
 
 import { main as rodarGeralScript } from "./scripts/geral.mjs";
 import { main as rodarCampanhasScript } from "./scripts/relatoriocampanha1.mjs";
@@ -18,6 +18,7 @@ import {
   listarCampanhasPorConta,
   adicionarListaSquad,
   atualizarListaSquad,
+  removerListaSquad,
 } from "./services/listasSquadService.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -82,6 +83,20 @@ io.on("connection", (socket) => {
 app.get("/api/clientes", async (req, res) => {
   try {
     const clientes = await getClientes();
+    res.json(clientes);
+  } catch (err) {
+    console.error("Erro ao buscar clientes:", err);
+    res.status(500).json({ error: "Erro ao buscar clientes" });
+  }
+});
+
+// Busca sob demanda (usada pelo modal "Selecionar clientes" do /executar) — evita decriptar
+// a base inteira de credenciais só pra listar clientes pra rodar manualmente.
+app.get("/api/clientes/busca", async (req, res) => {
+  const busca = (req.query.busca || "").trim();
+  if (!busca) return res.json([]);
+  try {
+    const clientes = await buscarClientes(busca);
     res.json(clientes);
   } catch (err) {
     console.error("Erro ao buscar clientes:", err);
@@ -289,6 +304,17 @@ app.patch("/api/listas-squad/:id", async (req, res) => {
   } catch (err) {
     console.error("Erro ao atualizar lista do squad:", err);
     res.status(500).json({ error: "Erro ao atualizar lista do squad" });
+  }
+});
+
+app.delete("/api/listas-squad/:id", async (req, res) => {
+  try {
+    const resultado = await removerListaSquad(req.params.id);
+    if (!resultado.ok) return res.status(400).json({ error: resultado.erro });
+    res.json({ status: "ok" });
+  } catch (err) {
+    console.error("Erro ao remover lista do squad:", err);
+    res.status(500).json({ error: "Erro ao remover lista do squad" });
   }
 });
 

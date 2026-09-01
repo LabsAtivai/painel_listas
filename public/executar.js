@@ -1,8 +1,8 @@
 const socket = io();
 
-let clientes = [];
-let clientesFiltrados = [];
-let selecionados = new Set();
+let selecionados = new Map(); // id -> cliente completo (com credenciais)
+let listaAtualRenderizada = [];
+let buscaClientesTimer = null;
 let logLines = [];
 let processados = 0;
 let erros = 0;
@@ -159,15 +159,24 @@ function showToast(msg, type = 'info') {
    CLIENTES
 ===================== */
 
-async function carregarClientes() {
-  try {
-    const res = await fetch('/api/clientes');
-    clientes = await res.json();
-    clientesFiltrados = [...clientes];
-    renderClientes(clientesFiltrados);
-  } catch (e) {
-    document.getElementById('listaClientes').innerHTML = '<div style="padding:40px;text-align:center;color:var(--red);font-size:13px">Erro ao carregar clientes</div>';
+function onBuscaClientesChange() {
+  clearTimeout(buscaClientesTimer);
+  const texto = document.getElementById('filtroClientes').value.trim();
+
+  if (!texto) {
+    renderClientes(Array.from(selecionados.values()));
+    return;
   }
+
+  buscaClientesTimer = setTimeout(async () => {
+    try {
+      const res = await fetch('/api/clientes/busca?busca=' + encodeURIComponent(texto));
+      const resultados = await res.json();
+      renderClientes(resultados);
+    } catch (e) {
+      document.getElementById('listaClientes').innerHTML = '<div style="padding:30px;text-align:center;color:var(--red);font-size:13px">Erro ao buscar clientes</div>';
+    }
+  }, 300);
 }
 
 function getInitials(email) {
@@ -177,58 +186,62 @@ function getInitials(email) {
 }
 
 function renderClientes(lista) {
+  listaAtualRenderizada = lista;
   const tbody = document.getElementById('listaClientes');
   document.getElementById('countFiltrados').textContent = lista.length + ' cliente' + (lista.length !== 1 ? 's' : '');
 
   if (!lista.length) {
-    tbody.innerHTML = '<div style="padding:30px;text-align:center;color:var(--text3);font-size:13px">Nenhum cliente encontrado</div>';
-    return;
+    const texto = document.getElementById('filtroClientes').value.trim();
+    tbody.innerHTML = `<div style="padding:30px;text-align:center;color:var(--text3);font-size:13px">${texto ? 'Nenhum cliente ativo encontrado' : 'Digite pra buscar clientes ativos por e-mail ou conta Snov.io'}</div>`;
+  } else {
+    tbody.innerHTML = lista.map(c => `
+      <div class="client-row" onclick="toggleCliente('${c.id}', this)">
+        <input type="checkbox" class="clienteCheck" data-id="${c.id}" ${selecionados.has(c.id) ? 'checked' : ''} onclick="event.stopPropagation();toggleCliente('${c.id}', this.closest('.client-row'))">
+        <div class="client-avatar">${getInitials(c.email)}</div>
+        <div class="client-info">
+          <div class="client-email">${c.email || '—'}</div>
+          <div class="client-snov">${c.snovioMail || '—'}</div>
+        </div>
+      </div>
+    `).join('');
   }
 
-  tbody.innerHTML = lista.map(c => `
-    <div class="client-row" onclick="toggleCliente('${c.email}', this)">
-      <input type="checkbox" class="clienteCheck" data-email="${c.email}" ${selecionados.has(c.email) ? 'checked' : ''} onclick="event.stopPropagation();toggleCliente('${c.email}', this.closest('.client-row'))">
-      <div class="client-avatar">${getInitials(c.email)}</div>
-      <div class="client-info">
-        <div class="client-email">${c.email || '—'}</div>
-        <div class="client-snov">${c.snovioMail || '—'}</div>
-      </div>
-    </div>
-  `).join('');
-
+  atualizarSelectAllLabel();
   atualizarContador();
 }
 
-function toggleCliente(email, row) {
-  if (selecionados.has(email)) {
-    selecionados.delete(email);
+function toggleCliente(id, row) {
+  if (selecionados.has(id)) {
+    selecionados.delete(id);
   } else {
-    selecionados.add(email);
+    const cliente = listaAtualRenderizada.find(c => String(c.id) === String(id));
+    if (cliente) selecionados.set(id, cliente);
   }
   const cb = row.querySelector('input[type=checkbox]');
-  if (cb) cb.checked = selecionados.has(email);
+  if (cb) cb.checked = selecionados.has(id);
+  atualizarSelectAllLabel();
   atualizarContador();
 }
 
-function filtrarClientes() {
-  const texto = document.getElementById('filtroClientes').value.toLowerCase();
-  clientesFiltrados = clientes.filter(c =>
-    (c.email && c.email.toLowerCase().includes(texto)) ||
-    (c.snovioMail && c.snovioMail.toLowerCase().includes(texto))
-  );
-  renderClientes(clientesFiltrados);
-}
-
-let todosSelected = false;
 function toggleTodos() {
-  todosSelected = !todosSelected;
-  document.querySelectorAll('.clienteCheck').forEach(c => {
-    c.checked = todosSelected;
-    if (todosSelected) selecionados.add(c.dataset.email);
-    else selecionados.delete(c.dataset.email);
+  if (!listaAtualRenderizada.length) return;
+  const todosMarcados = listaAtualRenderizada.every(c => selecionados.has(c.id));
+  listaAtualRenderizada.forEach(c => {
+    if (todosMarcados) selecionados.delete(c.id);
+    else selecionados.set(c.id, c);
   });
-  document.querySelector('.select-all-btn').textContent = todosSelected ? 'Desmarcar todos' : 'Selecionar todos';
-  atualizarContador();
+  renderClientes(listaAtualRenderizada);
+}
+
+function atualizarSelectAllLabel() {
+  const btn = document.querySelector('.select-all-btn');
+  if (!listaAtualRenderizada.length) {
+    btn.style.display = 'none';
+    return;
+  }
+  btn.style.display = '';
+  const todosMarcados = listaAtualRenderizada.every(c => selecionados.has(c.id));
+  btn.textContent = todosMarcados ? 'Desmarcar visíveis' : 'Selecionar visíveis';
 }
 
 function atualizarContador() {
@@ -244,7 +257,8 @@ function atualizarContador() {
 
 function abrirModal() {
   document.getElementById('modalClientes').classList.add('open');
-  if (!clientes.length) carregarClientes();
+  document.getElementById('filtroClientes').value = '';
+  renderClientes(Array.from(selecionados.values()));
 }
 
 function fecharModal() {
@@ -272,7 +286,7 @@ async function rodarSelecionados() {
   if (!selecionados.size) { showToast('Selecione ao menos um cliente', 'warn'); return; }
   setBtnRunning('btnSelecionados');
   setProgress(1);
-  const lista = clientes.filter(c => selecionados.has(c.email));
+  const lista = Array.from(selecionados.values());
   appendLog(`Iniciando execução para ${lista.length} cliente(s)...`);
   try {
     await fetch('/api/rodar', {
@@ -375,4 +389,4 @@ socket.on('cron-end', () => {
 /* =====================
    INIT
 ===================== */
-carregarClientes();
+renderClientes([]);

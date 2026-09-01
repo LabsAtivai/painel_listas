@@ -1,8 +1,6 @@
-import { getActiveClients } from "./credentialsApi.js";
+import { getActiveClients, searchActiveClients } from "./credentialsApi.js";
 
-export async function getClientes() {
-  const clients = await getActiveClients();
-
+function paraFormatoAntigo(clients) {
   return clients.map((c) => ({
     id: c.id,
     email: c.email,
@@ -11,4 +9,14 @@ export async function getClientes() {
     snovioMail: c.emailSnovio,
     senha: c.senha,
   }));
+}
+
+export async function getClientes() {
+  const clients = await getActiveClients();
+  return paraFormatoAntigo(clients);
+}
+
+export async function buscarClientes(query) {
+  const clients = await searchActiveClients(query);
+  return paraFormatoAntigo(clients);
 }

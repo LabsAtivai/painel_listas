@@ -122,6 +122,9 @@
   .cell-editable:hover{background:var(--surface3)}
   .edit-input{width:100%;background:var(--surface3);border:1px solid var(--blue);border-radius:6px;padding:4px 6px;color:var(--text);font-family:inherit;font-size:inherit;outline:none}
 
+  .btn-excluir{background:none;border:1px solid var(--border);color:var(--text3);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:13px;transition:all 0.15s}
+  .btn-excluir:hover{background:var(--red-dim);border-color:var(--red);color:var(--red)}
+
   .toast-container{position:fixed;bottom:20px;right:20px;display:flex;flex-direction:column;gap:8px;z-index:999}
   .toast{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius);padding:11px 14px;font-size:13px;display:flex;align-items:center;gap:10px;animation:toast-in 0.2s ease;min-width:240px;box-shadow:0 8px 24px rgba(0,0,0,0.4)}
   .toast.success{border-color:var(--green)}
@@ -193,10 +196,11 @@
             <th class="num" onclick="ordenarPor('ativosRestantes')">Ativos restantes<span class="sort-arrow" id="arrow-ativosRestantes"></span></th>
             <th class="num" onclick="ordenarPor('diasRestantes')">Prazo<span class="sort-arrow" id="arrow-diasRestantes"></span></th>
             <th>Squad</th>
+            <th></th>
           </tr>
         </thead>
         <tbody id="gridBody">
-          <tr><td colspan="7"><div class="empty-state">Carregando relatório...</div></td></tr>
+          <tr><td colspan="8"><div class="empty-state">Carregando relatório...</div></td></tr>
         </tbody>
       </table>
     </div>

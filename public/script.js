@@ -36,7 +36,7 @@ function showToast(msg, type = 'info') {
 
 async function carregarRelatorio() {
   const body = document.getElementById('gridBody');
-  body.innerHTML = '<tr><td colspan="7"><div class="empty-state">Carregando relatório...</div></td></tr>';
+  body.innerHTML = '<tr><td colspan="8"><div class="empty-state">Carregando relatório...</div></td></tr>';
   try {
     const res = await fetch('/api/relatorio-listas');
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -46,7 +46,7 @@ async function carregarRelatorio() {
     document.getElementById('headerUpdated').textContent = `Atualizado em ${atualizadoEm} (Brasília)`;
     render();
   } catch (e) {
-    body.innerHTML = '<tr><td colspan="7"><div class="empty-state" style="color:var(--red)">Erro ao carregar relatório</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="8"><div class="empty-state" style="color:var(--red)">Erro ao carregar relatório</div></td></tr>';
   }
 }
 
@@ -139,7 +139,7 @@ function render() {
   const body = document.getElementById('gridBody');
 
   if (!squadInfo) {
-    body.innerHTML = '<tr><td colspan="7"><div class="empty-state">Sem dados para este squad</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="8"><div class="empty-state">Sem dados para este squad</div></td></tr>';
     renderKpis(null);
     renderFooter(0, 0, 0);
     return;
@@ -171,7 +171,7 @@ function render() {
   const paginaLinhas = linhas.slice(inicio, inicio + pageSize);
 
   if (!paginaLinhas.length) {
-    body.innerHTML = '<tr><td colspan="7"><div class="empty-state">Nenhuma campanha encontrada</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="8"><div class="empty-state">Nenhuma campanha encontrada</div></td></tr>';
   } else {
     body.innerHTML = paginaLinhas.map(l => renderLinha(l, maxAtivos)).join('');
   }
@@ -240,6 +240,7 @@ function renderLinha(l, maxAtivos) {
         <span class="${prazoClasse}">${prazoIcon}${escapeHtml(l.dataPrevista || '—')}</span>
       </td>
       <td>${renderSquadSelect(l)}</td>
+      <td><button class="btn-excluir" title="Excluir lista" onclick="excluirLista(${l.listaSquadId}, this)">🗑</button></td>
     </tr>
   `;
 }
@@ -273,6 +274,23 @@ async function mudarSquad(select, listaSquadId) {
     showToast(e.message || 'Erro ao mudar squad', 'error');
     select.disabled = false;
     select.value = squadAtual;
+  }
+}
+
+async function excluirLista(listaSquadId, btn) {
+  if (!confirm('Excluir essa lista do squad? Essa ação não pode ser desfeita.')) return;
+  btn.disabled = true;
+
+  try {
+    const res = await fetch(`/api/listas-squad/${listaSquadId}`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao excluir');
+
+    showToast('Lista excluída', 'success');
+    await carregarRelatorio();
+  } catch (e) {
+    showToast(e.message || 'Erro ao excluir lista', 'error');
+    btn.disabled = false;
   }
 }
 
