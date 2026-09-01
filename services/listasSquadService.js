@@ -42,9 +42,9 @@ export async function adicionarListaSquad({ campanhaId, squad, contaEmail, dispa
   }
 }
 
-// Edição inline (disparos e/ou conta_email) de uma entrada já existente em listas_squad,
+// Edição inline (disparos, conta_email e/ou squad) de uma entrada já existente em listas_squad,
 // usada pela grid da home. Só atualiza os campos informados.
-export async function atualizarListaSquad(id, { disparos, contaEmail }) {
+export async function atualizarListaSquad(id, { disparos, contaEmail, squad }) {
   const campos = [];
   const valores = [];
 
@@ -65,18 +65,33 @@ export async function atualizarListaSquad(id, { disparos, contaEmail }) {
     valores.push(email);
   }
 
+  if (squad !== undefined) {
+    if (!SQUADS_VALIDOS.has(squad)) {
+      return { ok: false, erro: "Squad inválido." };
+    }
+    campos.push("squad = ?");
+    valores.push(squad);
+  }
+
   if (!campos.length) {
     return { ok: false, erro: "Nada pra atualizar." };
   }
 
   const pool = getPool();
-  const [result] = await pool.query(
-    `UPDATE listas_squad SET ${campos.join(", ")} WHERE id = ?`,
-    [...valores, id]
-  );
+  try {
+    const [result] = await pool.query(
+      `UPDATE listas_squad SET ${campos.join(", ")} WHERE id = ?`,
+      [...valores, id]
+    );
 
-  if (result.affectedRows === 0) {
-    return { ok: false, erro: "Entrada não encontrada." };
+    if (result.affectedRows === 0) {
+      return { ok: false, erro: "Entrada não encontrada." };
+    }
+    return { ok: true };
+  } catch (err) {
+    if (err.code === "ER_DUP_ENTRY") {
+      return { ok: false, erro: "Essa campanha já está nesse squad." };
+    }
+    throw err;
   }
-  return { ok: true };
 }

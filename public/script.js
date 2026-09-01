@@ -36,7 +36,7 @@ function showToast(msg, type = 'info') {
 
 async function carregarRelatorio() {
   const body = document.getElementById('gridBody');
-  body.innerHTML = '<tr><td colspan="6"><div class="empty-state">Carregando relatório...</div></td></tr>';
+  body.innerHTML = '<tr><td colspan="7"><div class="empty-state">Carregando relatório...</div></td></tr>';
   try {
     const res = await fetch('/api/relatorio-listas');
     if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -46,7 +46,7 @@ async function carregarRelatorio() {
     document.getElementById('headerUpdated').textContent = `Atualizado em ${atualizadoEm} (Brasília)`;
     render();
   } catch (e) {
-    body.innerHTML = '<tr><td colspan="6"><div class="empty-state" style="color:var(--red)">Erro ao carregar relatório</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="7"><div class="empty-state" style="color:var(--red)">Erro ao carregar relatório</div></td></tr>';
   }
 }
 
@@ -139,7 +139,7 @@ function render() {
   const body = document.getElementById('gridBody');
 
   if (!squadInfo) {
-    body.innerHTML = '<tr><td colspan="6"><div class="empty-state">Sem dados para este squad</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="7"><div class="empty-state">Sem dados para este squad</div></td></tr>';
     renderKpis(null);
     renderFooter(0, 0, 0);
     return;
@@ -171,7 +171,7 @@ function render() {
   const paginaLinhas = linhas.slice(inicio, inicio + pageSize);
 
   if (!paginaLinhas.length) {
-    body.innerHTML = '<tr><td colspan="6"><div class="empty-state">Nenhuma campanha encontrada</div></td></tr>';
+    body.innerHTML = '<tr><td colspan="7"><div class="empty-state">Nenhuma campanha encontrada</div></td></tr>';
   } else {
     body.innerHTML = paginaLinhas.map(l => renderLinha(l, maxAtivos)).join('');
   }
@@ -239,8 +239,41 @@ function renderLinha(l, maxAtivos) {
       <td class="num">
         <span class="${prazoClasse}">${prazoIcon}${escapeHtml(l.dataPrevista || '—')}</span>
       </td>
+      <td>${renderSquadSelect(l)}</td>
     </tr>
   `;
+}
+
+const SQUADS_SELECIONAVEIS = ['Onboarding', 'SDR REMOTO', 'Geral'];
+
+function renderSquadSelect(l) {
+  const opcoes = SQUADS_SELECIONAVEIS.map(sq =>
+    `<option value="${escapeHtml(sq)}" ${sq === squadAtual ? 'selected' : ''}>${escapeHtml(sq)}</option>`
+  ).join('');
+  return `<select class="select-input" onchange="mudarSquad(this, ${l.listaSquadId})">${opcoes}</select>`;
+}
+
+async function mudarSquad(select, listaSquadId) {
+  const novoSquad = select.value;
+  if (novoSquad === squadAtual) return;
+  select.disabled = true;
+
+  try {
+    const res = await fetch(`/api/listas-squad/${listaSquadId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ squad: novoSquad }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Erro ao salvar');
+
+    showToast(`Movido para ${novoSquad}`, 'success');
+    await carregarRelatorio();
+  } catch (e) {
+    showToast(e.message || 'Erro ao mudar squad', 'error');
+    select.disabled = false;
+    select.value = squadAtual;
+  }
 }
 
 function renderReportSummary() {

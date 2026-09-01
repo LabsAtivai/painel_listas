@@ -277,11 +277,12 @@ app.post("/api/listas-squad", async (req, res) => {
 });
 
 app.patch("/api/listas-squad/:id", async (req, res) => {
-  const { disparos, contaEmail } = req.body || {};
+  const { disparos, contaEmail, squad } = req.body || {};
   try {
     const resultado = await atualizarListaSquad(req.params.id, {
       disparos: disparos !== undefined ? Number(disparos) : undefined,
       contaEmail,
+      squad,
     });
     if (!resultado.ok) return res.status(400).json({ error: resultado.erro });
     res.json({ status: "ok" });
