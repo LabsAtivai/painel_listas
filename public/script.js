@@ -8,7 +8,7 @@ let sortDir = 'asc';
 
 const CRITICO_DIAS = 4;
 const ATENCAO_DIAS = 7;
-const SAUDAVEL_DIAS = 10;
+const SAUDAVEL_DIAS = 11;
 const TIMEZONE = 'America/Sao_Paulo';
 
 function escapeHtml(str) {
@@ -124,7 +124,7 @@ function classificarLinha(l) {
   if (l.diasRestantes < CRITICO_DIAS) return 'critico';
   if (l.diasRestantes < ATENCAO_DIAS) return 'atencao';
   if (l.diasRestantes < SAUDAVEL_DIAS) return 'saudavel';
-  return 'nada';
+  return 'acumulado';
 }
 
 function render() {
@@ -185,22 +185,22 @@ function renderKpis(squadInfo) {
   if (!squadInfo) {
     document.getElementById('kpiDisparos').textContent = '—';
     document.getElementById('kpiCriticas').textContent = '—';
-    document.getElementById('kpiAtivos').textContent = '—';
+    document.getElementById('kpiAcumulados').textContent = '—';
     document.getElementById('kpiCardCriticas').classList.remove('tem-criticas');
     return;
   }
   let totalDisparos = 0;
-  let totalAtivos = 0;
+  let acumulados = 0;
   let criticas = 0;
   for (const l of squadInfo.linhas) {
     if (l.status === 'erro') continue;
     totalDisparos += l.disparos || 0;
-    totalAtivos += l.ativosRestantes || 0;
+    if (classificarLinha(l) === 'acumulado') acumulados++;
     if (l.diasRestantes != null && l.diasRestantes < CRITICO_DIAS) criticas++;
   }
   document.getElementById('kpiDisparos').textContent = formatNumero(totalDisparos);
   document.getElementById('kpiCriticas').textContent = formatNumero(criticas);
-  document.getElementById('kpiAtivos').textContent = formatNumero(totalAtivos);
+  document.getElementById('kpiAcumulados').textContent = formatNumero(acumulados);
   document.getElementById('kpiCardCriticas').classList.toggle('tem-criticas', criticas > 0);
 }
 
@@ -211,6 +211,7 @@ function renderLinha(l, maxAtivos) {
     critico: '<span class="status-pill critico">🔴 Crítico</span>',
     atencao: '<span class="status-pill atencao">🟡 Atenção</span>',
     saudavel: '<span class="status-pill saudavel">🟢 Saudável</span>',
+    acumulado: '<span class="status-pill acumulado">🔵 Acumulado</span>',
     nada: '',
   };
   const pill = pills[classe];
@@ -303,7 +304,7 @@ function renderReportSummary() {
     const info = relatorioData.squads[sq];
     if (!info) return '';
 
-    let criticas = 0, atencao = 0, saudaveis = 0, semAlerta = 0, totalDisparos = 0;
+    let criticas = 0, atencao = 0, saudaveis = 0, acumulados = 0, totalDisparos = 0;
     for (const l of info.linhas) {
       if (l.status === 'erro') continue;
       totalDisparos += l.disparos || 0;
@@ -311,7 +312,7 @@ function renderReportSummary() {
       if (classe === 'critico') criticas++;
       else if (classe === 'atencao') atencao++;
       else if (classe === 'saudavel') saudaveis++;
-      else semAlerta++;
+      else if (classe === 'acumulado') acumulados++;
     }
 
     return `
@@ -320,19 +321,19 @@ function renderReportSummary() {
         <div class="report-stats">
           <div class="report-stat-tile critico ${criticas > 0 ? 'tem-valor' : ''}">
             <div class="report-stat-value">${formatNumero(criticas)}</div>
-            <div class="report-stat-label">🔴 Crítico (&lt; 4 dias)</div>
+            <div class="report-stat-label">🔴 Crítico (0–3 dias)</div>
           </div>
           <div class="report-stat-tile atencao">
             <div class="report-stat-value">${formatNumero(atencao)}</div>
-            <div class="report-stat-label">🟡 Atenção (4–7 dias)</div>
+            <div class="report-stat-label">🟡 Atenção (4–6 dias)</div>
           </div>
           <div class="report-stat-tile saudavel">
             <div class="report-stat-value">${formatNumero(saudaveis)}</div>
             <div class="report-stat-label">🟢 Saudável (7–10 dias)</div>
           </div>
-          <div class="report-stat-tile neutro">
-            <div class="report-stat-value">${formatNumero(semAlerta)}</div>
-            <div class="report-stat-label">Sem alerta (&gt; 10 dias)</div>
+          <div class="report-stat-tile acumulado">
+            <div class="report-stat-value">${formatNumero(acumulados)}</div>
+            <div class="report-stat-label">🔵 Acumulado (&gt; 10 dias)</div>
           </div>
           <div class="report-stat-tile neutro">
             <div class="report-stat-value">${formatNumero(totalDisparos)}</div>

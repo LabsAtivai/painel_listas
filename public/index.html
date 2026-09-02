@@ -79,6 +79,7 @@
   .status-pill.critico{background:var(--red-dim);color:var(--red)}
   .status-pill.atencao{background:var(--amber-dim);color:var(--amber)}
   .status-pill.saudavel{background:var(--green-dim);color:var(--green)}
+  .status-pill.acumulado{background:var(--blue-dim);color:var(--blue)}
   .status-pill.erro{background:var(--purple-dim);color:var(--purple)}
 
   .cell-mono{font-family:'JetBrains Mono',monospace}
@@ -105,6 +106,8 @@
   .report-stat-tile.atencao .report-stat-value{color:var(--amber)}
   .report-stat-tile.saudavel{background:var(--green-dim);border:1px solid rgba(34,197,94,0.3)}
   .report-stat-tile.saudavel .report-stat-value{color:var(--green)}
+  .report-stat-tile.acumulado{background:var(--blue-dim);border:1px solid rgba(59,130,246,0.3)}
+  .report-stat-tile.acumulado .report-stat-value{color:var(--blue)}
   .report-stat-tile.neutro{background:var(--surface2);border:1px solid var(--border)}
   .report-stat-tile.neutro .report-stat-value{color:var(--text)}
 
@@ -161,10 +164,11 @@
     <input class="search-input" id="filtroCampanha" placeholder="🔍  Buscar campanha ou conta..." oninput="onFiltroChange()"/>
     <select class="select-input" id="filtroStatus" onchange="onFiltroChange()">
       <option value="todos">Status: Todos</option>
-      <option value="critico">Status: Crítico (&lt; 4 dias)</option>
-      <option value="atencao">Status: Atenção (4–7 dias)</option>
+      <option value="critico">Status: Crítico (0–3 dias)</option>
+      <option value="atencao">Status: Atenção (4–6 dias)</option>
       <option value="saudavel">Status: Saudável (7–10 dias)</option>
-      <option value="nada">Status: Sem alerta (&gt; 10 dias)</option>
+      <option value="acumulado">Status: Acumulado (&gt; 10 dias)</option>
+      <option value="nada">Status: Sem dados</option>
       <option value="erro">Status: Com erro</option>
     </select>
   </div>
@@ -175,12 +179,12 @@
       <div class="kpi-value" id="kpiDisparos">—</div>
     </div>
     <div class="kpi-card critico" id="kpiCardCriticas">
-      <div class="kpi-label">Contas críticas (&lt; 4 dias) ⚠️</div>
+      <div class="kpi-label">Contas críticas (0–3 dias) ⚠️</div>
       <div class="kpi-value" id="kpiCriticas">—</div>
     </div>
     <div class="kpi-card">
-      <div class="kpi-label">Total de ativos restantes</div>
-      <div class="kpi-value" id="kpiAtivos">—</div>
+      <div class="kpi-label">Acumulados (&gt; 10 dias)</div>
+      <div class="kpi-value" id="kpiAcumulados">—</div>
     </div>
   </div>
 
