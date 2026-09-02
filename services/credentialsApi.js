@@ -94,15 +94,19 @@ export async function getActiveClients() {
 
   const clients = [];
   for (const account of accounts) {
-    const creds = await fetchCredentials(http, account.id);
-    clients.push({
-      id: account.id,
-      email: account.email,
-      clientId: creds.snov_id,
-      clientSecret: creds.snov_secret,
-      emailSnovio: creds.snov_email,
-      senha: creds.snov_password,
-    });
+    try {
+      const creds = await fetchCredentials(http, account.id);
+      clients.push({
+        id: account.id,
+        email: account.email,
+        clientId: creds.snov_id,
+        clientSecret: creds.snov_secret,
+        emailSnovio: creds.snov_email,
+        senha: creds.snov_password,
+      });
+    } catch (err) {
+      console.error(`Erro ao buscar credencial de ${account.email}:`, err.message);
+    }
   }
 
   return clients;
