@@ -2,16 +2,16 @@ import axios from "axios";
 import { getActiveClients } from "../services/credentialsApi.js";
 import { getPool } from "../services/db.js";
 import { getCampanhasPorConta, atualizarAtivosRestantes } from "../services/snovioCache.js";
+import { snovio } from "../services/snovioRateLimiter.js";
 
 async function getAccessToken(clientId, clientSecret) {
   try {
-    const response = await axios.post(
-      "https://api.snov.io/v1/oauth/access_token",
-      {
+    const response = await snovio(() =>
+      axios.post("https://api.snov.io/v1/oauth/access_token", {
         grant_type: "client_credentials",
         client_id: clientId,
         client_secret: clientSecret,
-      }
+      })
     );
     return response.data.access_token;
   } catch (error) {
@@ -22,11 +22,10 @@ async function getAccessToken(clientId, clientSecret) {
 
 async function getCampaignProgress(accessToken, campaignId) {
   try {
-    const response = await axios.get(
-      `https://api.snov.io/v2/campaigns/${campaignId}/progress`,
-      {
+    const response = await snovio(() =>
+      axios.get(`https://api.snov.io/v2/campaigns/${campaignId}/progress`, {
         headers: { Authorization: `Bearer ${accessToken}` },
-      }
+      })
     );
     return response.data;
   } catch (error) {
