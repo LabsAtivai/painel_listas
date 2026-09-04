@@ -1,7 +1,7 @@
 import axios from "axios";
 import { getActiveClients } from "../services/credentialsApi.js";
 import { getPool } from "../services/db.js";
-import { getCampanhasPorConta, atualizarAtivosRestantes } from "../services/snovioCache.js";
+import { getCampanhasPorConta, atualizarAtivosRestantes, removerCampanhaOrfa } from "../services/snovioCache.js";
 import { snovio } from "../services/snovioRateLimiter.js";
 
 async function getAccessToken(clientId, clientSecret) {
@@ -79,10 +79,23 @@ export async function main(clientesSelecionados) {
                 `  ✔ campaignID ${campanha.id} | ativos restantes: ${unfinished} | cliente: ${client.email}`
               );
             } catch (error) {
-              console.error(
-                `Erro ao processar campanha ${campanha.id} do cliente ${client.email}:`,
-                error
-              );
+              const naoEncontrada =
+                error.response?.status === 422 &&
+                /not found/i.test(error.response?.data?.data?.message || error.response?.data?.message || "");
+
+              if (naoEncontrada) {
+                const removida = await removerCampanhaOrfa(pool, campanha.id);
+                console.warn(
+                  `  🗑 Campanha ${campanha.id} não existe mais no Snov.io — ${
+                    removida ? "removida do cache" : "mantida (ainda usada em listas_squad)"
+                  }`
+                );
+              } else {
+                console.error(
+                  `Erro ao processar campanha ${campanha.id} do cliente ${client.email}:`,
+                  error
+                );
+              }
             }
           }
         } catch (error) {

@@ -30,6 +30,7 @@ export async function upsertCampanhas(pool, contaId, campanhas) {
     `INSERT INTO campanhas (id, conta_id, nome, list_id, status_snovio, sincronizado_em)
      VALUES ?
      ON DUPLICATE KEY UPDATE
+       conta_id = VALUES(conta_id),
        nome = VALUES(nome),
        list_id = VALUES(list_id),
        status_snovio = VALUES(status_snovio),
@@ -53,4 +54,19 @@ export async function getCampanhasPorConta(pool, contaId) {
     [contaId]
   );
   return rows;
+}
+
+// Remove do cache uma campanha que o Snov.io não reconhece mais (excluída/movida por lá).
+// Se ainda estiver referenciada em listas_squad, a FK impede a exclusão — nesse caso mantém
+// e avisa quem chamou, em vez de derrubar a lista do squad.
+export async function removerCampanhaOrfa(pool, campanhaId) {
+  try {
+    await pool.query(`DELETE FROM campanhas WHERE id = ?`, [campanhaId]);
+    return true;
+  } catch (err) {
+    if (err.code === "ER_ROW_IS_REFERENCED_2" || err.code === "ER_ROW_IS_REFERENCED") {
+      return false;
+    }
+    throw err;
+  }
 }
