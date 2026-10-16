@@ -41,6 +41,7 @@ async function carregarRelatorio() {
     const res = await fetch('/api/relatorio-listas');
     if (!res.ok) throw new Error('HTTP ' + res.status);
     relatorioData = await res.json();
+    renderResumoSquads(relatorioData);
     pagina = 1;
     const atualizadoEm = new Date(relatorioData.geradoEm).toLocaleString('pt-BR', { timeZone: TIMEZONE });
     document.getElementById('headerUpdated').textContent = `Atualizado em ${atualizadoEm} (Brasília)`;
@@ -444,3 +445,24 @@ function iniciarEdicao(td, listaSquadId, campo) {
    INIT
 ===================== */
 carregarRelatorio();
+// Chave na API → nome que aparece na tela
+const NOMES_SQUAD = {
+  "Onboarding": "Onboarding",
+  "SDR REMOTO": "SDR Remoto",
+  "Geral": "Geral",
+};
+
+function renderResumoSquads(dados) {
+  const el = document.getElementById("resumoSquads");
+  if (!el || !dados || !dados.squads) return;
+
+  el.innerHTML = Object.keys(NOMES_SQUAD).map((chave) => {
+    const s = dados.squads[chave] || {};
+    return `
+      <div class="card-squad">
+        <h4>${NOMES_SQUAD[chave]}</h4>
+        <p><strong>${s.totalClientes ?? 0}</strong> clientes</p>
+        <p><strong>${s.totalCampanhas ?? 0}</strong> campanhas</p>
+      </div>`;
+  }).join("");
+}

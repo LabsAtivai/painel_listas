@@ -173,20 +173,28 @@
     </select>
   </div>
 
-  <div class="kpi-row">
+<div class="kpi-row">
+    <!-- Card de Disparos -->
     <div class="kpi-card">
-      <div class="kpi-label">Total de disparos</div>
-      <div class="kpi-value" id="kpiDisparos">—</div>
+        <div class="kpi-label">Total de disparos</div>
+        <div class="kpi-value" id="kpiDisparos">-</div>
     </div>
+    
+    <!-- Card de Contas Críticas -->
     <div class="kpi-card critico" id="kpiCardCriticas">
-      <div class="kpi-label">Contas críticas (0–3 dias) ⚠️</div>
-      <div class="kpi-value" id="kpiCriticas">—</div>
+        <div class="kpi-label">Contas críticas (0-3 dias) ⚠️</div>
+        <div class="kpi-value" id="kpiCriticas">-</div>
     </div>
+    
+    <!-- Card de Acumulados -->
     <div class="kpi-card">
-      <div class="kpi-label">Acumulados (&gt; 10 dias)</div>
-      <div class="kpi-value" id="kpiAcumulados">—</div>
+        <div class="kpi-label">Acumulados (&gt; 10 dias)</div>
+        <div class="kpi-value" id="kpiAcumulados">-</div>
     </div>
-  </div>
+</div>
+
+<!-- O resumo dos squads fica aqui fora, logo abaixo da linha dos KPIs -->
+<div id="resumoSquads" class="resumo-squads"></div>
 
   <div class="grid-card">
     <div class="grid-table-wrap">

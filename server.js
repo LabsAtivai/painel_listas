@@ -239,6 +239,22 @@ app.post("/api/sincronizar-listas", async (req, res) => {
 app.get("/api/relatorio-listas", async (req, res) => {
   try {
     const dados = await getRelatorioListas();
+
+    // Conta clientes e campanhas de cada squad, sem repetir
+    for (const squad of Object.values(dados.squads || {})) {
+      const linhas = squad.linhas || [];
+
+      const clientes = new Set(
+        linhas.map((l) => (l.clienteConta || "").trim().toLowerCase()).filter(Boolean)
+      );
+      const campanhas = new Set(
+        linhas.map((l) => l.campaignId).filter(Boolean)
+      );
+
+      squad.totalClientes = clientes.size;
+      squad.totalCampanhas = campanhas.size;
+    }
+
     res.json(dados);
   } catch (err) {
     console.error("Erro ao buscar relatório de listas:", err);
