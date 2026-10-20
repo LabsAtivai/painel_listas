@@ -51,6 +51,11 @@
   .kpi-label{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
   .kpi-value{font-size:26px;font-weight:600;font-family:'JetBrains Mono',monospace;color:var(--text)}
   .kpi-card.critico .kpi-value{color:var(--red)}
+  .resumo-squads{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .card-squad{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 20px}
+  .card-squad h4{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px;font-weight:500}
+  .card-squad p{font-size:13px;color:var(--text2);margin-top:2px}
+  .card-squad strong{font-family:'JetBrains Mono',monospace;font-size:18px;font-weight:600;color:var(--text);margin-right:4px}
   .kpi-card.critico.tem-criticas{background:linear-gradient(135deg,rgba(239,68,68,0.28),rgba(239,68,68,0.08));border-color:var(--red);box-shadow:0 0 0 1px rgba(239,68,68,0.35),0 6px 24px rgba(239,68,68,0.2)}
   .kpi-card.critico.tem-criticas .kpi-label{color:#fca5a5}
   .kpi-card.critico.tem-criticas .kpi-value{color:#fecaca}
@@ -173,28 +178,22 @@
     </select>
   </div>
 
-<div class="kpi-row">
-    <!-- Card de Disparos -->
+  <div class="kpi-row">
     <div class="kpi-card">
-        <div class="kpi-label">Total de disparos</div>
-        <div class="kpi-value" id="kpiDisparos">-</div>
+      <div class="kpi-label">Total de disparos</div>
+      <div class="kpi-value" id="kpiDisparos">—</div>
     </div>
-    
-    <!-- Card de Contas Críticas -->
     <div class="kpi-card critico" id="kpiCardCriticas">
-        <div class="kpi-label">Contas críticas (0-3 dias) ⚠️</div>
-        <div class="kpi-value" id="kpiCriticas">-</div>
+      <div class="kpi-label">Contas críticas (0–3 dias) ⚠️</div>
+      <div class="kpi-value" id="kpiCriticas">—</div>
     </div>
-    
-    <!-- Card de Acumulados -->
     <div class="kpi-card">
-        <div class="kpi-label">Acumulados (&gt; 10 dias)</div>
-        <div class="kpi-value" id="kpiAcumulados">-</div>
+      <div class="kpi-label">Acumulados (&gt; 10 dias)</div>
+      <div class="kpi-value" id="kpiAcumulados">—</div>
     </div>
-</div>
+  </div>
 
-<!-- O resumo dos squads fica aqui fora, logo abaixo da linha dos KPIs -->
-<div id="resumoSquads" class="resumo-squads"></div>
+  <div id="resumoSquads" class="resumo-squads"></div>
 
   <div class="grid-card">
     <div class="grid-table-wrap">

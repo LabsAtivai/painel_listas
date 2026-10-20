@@ -242,7 +242,7 @@ app.get("/api/relatorio-listas", async (req, res) => {
 
     // Conta clientes e campanhas de cada squad, sem repetir
     for (const squad of Object.values(dados.squads || {})) {
-      const linhas = squad.linhas || [];
+      const linhas = (squad.linhas || []).filter((l) => l.status !== "erro");
 
       const clientes = new Set(
         linhas.map((l) => (l.clienteConta || "").trim().toLowerCase()).filter(Boolean)
